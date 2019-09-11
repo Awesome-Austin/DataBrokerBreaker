@@ -2,12 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="47665589-de13-4249-8828-4b1e5229e0d3" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/dictionaries/nk3737.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dictionaries/nk3737.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/collectr/_abstract.py" beforeDir="false" afterPath="$PROJECT_DIR$/collectr/_abstract.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/collectr/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/collectr/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/collectr/spokeo.py" beforeDir="false" afterPath="$PROJECT_DIR$/collectr/spokeo.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -17,12 +12,12 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/README.md">
           <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
             <state split_layout="SPLIT">
-              <first_editor relative-caret-position="408">
-                <caret line="24" column="36" selection-start-line="24" selection-start-column="13" selection-end-line="24" selection-end-column="36" />
+              <first_editor relative-caret-position="68">
+                <caret line="4" column="90" selection-start-line="4" selection-start-column="90" selection-end-line="4" selection-end-column="90" />
               </first_editor>
               <second_editor />
             </state>
@@ -41,11 +36,11 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/collectr/mylife.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="439">
-              <caret line="59" column="23" lean-forward="true" selection-start-line="59" selection-start-column="23" selection-end-line="59" selection-end-column="23" />
+              <caret line="59" column="23" selection-start-line="59" selection-start-column="23" selection-end-line="59" selection-end-column="23" />
               <folding>
                 <element signature="e#0#11#0" expanded="true" />
               </folding>
@@ -87,7 +82,7 @@
         <entry file="file://$PROJECT_DIR$/collectr/_abstract.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="413">
-              <caret line="110" lean-forward="true" selection-start-line="110" selection-end-line="110" />
+              <caret line="110" selection-start-line="110" selection-end-line="110" />
               <folding>
                 <element signature="e#0#29#0" expanded="true" />
               </folding>
@@ -121,7 +116,6 @@
     <option name="CHANGED_PATHS">
       <list>
         <option value="$PROJECT_DIR$/mylife.py" />
-        <option value="$PROJECT_DIR$/README.md" />
         <option value="$PROJECT_DIR$/purgr/main.py" />
         <option value="$PROJECT_DIR$/email.txt" />
         <option value="$PROJECT_DIR$/purgr/spokeo.py" />
@@ -161,6 +155,7 @@
         <option value="$PROJECT_DIR$/removr/spokeo.py" />
         <option value="$PROJECT_DIR$/definitions.py" />
         <option value="$PROJECT_DIR$/collectr/mylife.py" />
+        <option value="$PROJECT_DIR$/README.md" />
       </list>
     </option>
   </component>
@@ -389,7 +384,7 @@
     <editor active="true" />
     <layout>
       <window_info id="Favorites" order="0" side_tool="true" />
-      <window_info content_ui="combo" id="Project" order="1" visible="true" weight="0.1406744" />
+      <window_info active="true" content_ui="combo" id="Project" order="1" visible="true" weight="0.1406744" />
       <window_info id="Structure" order="2" side_tool="true" weight="0.25" />
       <window_info anchor="bottom" id="Terminal" order="0" weight="0.32917964" />
       <window_info anchor="bottom" id="Event Log" order="1" sideWeight="0.50052685" side_tool="true" weight="0.44548288" />
@@ -397,7 +392,7 @@
       <window_info anchor="bottom" id="Message" order="3" />
       <window_info anchor="bottom" id="Find" order="4" weight="0.32917964" />
       <window_info anchor="bottom" id="Version Control" order="5" weight="0.32917964" />
-      <window_info active="true" anchor="bottom" id="Run" order="6" sideWeight="0.49894625" visible="true" weight="0.30944964" />
+      <window_info anchor="bottom" id="Run" order="6" sideWeight="0.49894625" visible="true" weight="0.30944964" />
       <window_info anchor="bottom" id="Debug" order="7" sideWeight="0.49947312" weight="0.37175494" />
       <window_info anchor="bottom" id="Cvs" order="8" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="9" weight="0.4" />
@@ -625,20 +620,10 @@
     <entry file="file://$PROJECT_DIR$/collectr/_abstract.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="413">
-          <caret line="110" lean-forward="true" selection-start-line="110" selection-end-line="110" />
+          <caret line="110" selection-start-line="110" selection-end-line="110" />
           <folding>
             <element signature="e#0#29#0" expanded="true" />
           </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/README.md">
-      <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
-        <state split_layout="SPLIT">
-          <first_editor relative-caret-position="408">
-            <caret line="24" column="36" selection-start-line="24" selection-start-column="13" selection-end-line="24" selection-end-column="36" />
-          </first_editor>
-          <second_editor />
         </state>
       </provider>
     </entry>
@@ -679,10 +664,20 @@
     <entry file="file://$PROJECT_DIR$/collectr/mylife.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="439">
-          <caret line="59" column="23" lean-forward="true" selection-start-line="59" selection-start-column="23" selection-end-line="59" selection-end-column="23" />
+          <caret line="59" column="23" selection-start-line="59" selection-start-column="23" selection-end-line="59" selection-end-column="23" />
           <folding>
             <element signature="e#0#11#0" expanded="true" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/README.md">
+      <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
+        <state split_layout="SPLIT">
+          <first_editor relative-caret-position="68">
+            <caret line="4" column="90" selection-start-line="4" selection-start-column="90" selection-end-line="4" selection-end-column="90" />
+          </first_editor>
+          <second_editor />
         </state>
       </provider>
     </entry>

@@ -2,7 +2,7 @@
 
 Inspired by a reddit post from [r/youshouldknow](https://old.reddit.com/r/YouShouldKnow/comments/8tf6pq/ysk_that_online_databases_that_collect_your/) regarding Data Brokers (sites that aggregate personal data). 
 
-The idea will be to have a text file `names.txt` consisting of a list of names. This project will go through each line and go through the steps required the removal of data for the following sites:
+The idea will be to have a CSV file consisting of a list of names (`names.csv` for example). This project will go through each line and go through the steps required the removal of data for the following sites:
 * [Spokeo](#Spokeo)
 * [MyLife](#MyLife)
 * [Radaris](#Radaris)
