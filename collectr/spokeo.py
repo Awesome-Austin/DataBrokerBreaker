@@ -5,8 +5,8 @@ import logging
 import pandas as pd
 from pandas.io.json import json_normalize
 
-from definitions import STATES
-from collectr._abstract import AbstractCollector, NoRecords
+from definitions import STATES, TEST_PERSON
+from collectr._abstract import RequestCollectr, NoRecords
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logging.disable(logging.CRITICAL)
@@ -14,7 +14,7 @@ logging.disable(logging.CRITICAL)
 BASE_URL = 'https://www.spokeo.com'
 
 
-class Spokeo(AbstractCollector):
+class Spokeo(RequestCollectr):
     def __init__(self, person, **kwargs):
         super(Spokeo, self).__init__(person, BASE_URL, **kwargs)
         if self.person.state.upper() in STATES.keys():
@@ -108,8 +108,6 @@ class Spokeo(AbstractCollector):
                     self.df.drop(i, inplace=True)
         print('\t- {count} record{s} found'.format(count=len(self.df.index), s='s' if len(self.df.index) != 1 else ''))
         print()
-        if len(self.df.index) == 0:
-            print('test')
         return True
 
     def check_relatives(self, people=None):
@@ -141,7 +139,6 @@ class Spokeo(AbstractCollector):
 
 
 if __name__ == '__main__':
-    j = pd.Series({'first_name': 'Dennis', 'last_name': 'Starkweather', 'city': '', 'state': 'Ca', 'check_family':False})
-    with Spokeo(j, test=True) as s:
+    with Spokeo(TEST_PERSON, test=True) as s:
         s.validate_records()
         s.check_relatives()
