@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="47665589-de13-4249-8828-4b1e5229e0d3" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -12,16 +12,21 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/README.md">
           <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
             <state split_layout="SPLIT">
-              <first_editor relative-caret-position="68">
-                <caret line="4" column="90" selection-start-line="4" selection-start-column="90" selection-end-line="4" selection-end-column="90" />
+              <first_editor relative-caret-position="119">
+                <caret line="7" selection-start-line="4" selection-start-column="90" selection-end-line="7" />
               </first_editor>
               <second_editor />
             </state>
           </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/files/test">
+          <provider selected="true" editor-type-id="text-editor" />
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
@@ -184,6 +189,11 @@
               <item name="InternetData" type="b2602c69:ProjectViewProjectNode" />
               <item name="InternetData" type="462c0819:PsiDirectoryNode" />
               <item name="collectr" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="InternetData" type="b2602c69:ProjectViewProjectNode" />
+              <item name="InternetData" type="462c0819:PsiDirectoryNode" />
+              <item name="files" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="InternetData" type="b2602c69:ProjectViewProjectNode" />
@@ -442,7 +452,6 @@
     </expressions>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/json/William_James_Gifford.json" />
     <entry file="file://$PROJECT_DIR$/names/names2.py" />
     <entry file="file://$PROJECT_DIR$/names/__init__.py" />
     <entry file="file://$PROJECT_DIR$/removr/spokeo/reCAPTCHA.png" />
@@ -674,12 +683,15 @@
     <entry file="file://$PROJECT_DIR$/README.md">
       <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
         <state split_layout="SPLIT">
-          <first_editor relative-caret-position="68">
-            <caret line="4" column="90" selection-start-line="4" selection-start-column="90" selection-end-line="4" selection-end-column="90" />
+          <first_editor relative-caret-position="119">
+            <caret line="7" selection-start-line="4" selection-start-column="90" selection-end-line="7" />
           </first_editor>
           <second_editor />
         </state>
       </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/files/test">
+      <provider selected="true" editor-type-id="text-editor" />
     </entry>
   </component>
 </project>
