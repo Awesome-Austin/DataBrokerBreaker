@@ -3,7 +3,7 @@ from collectr import Spokeo
 
 def spokeo(person, people):
     with Spokeo(person) as s:
-        s.validate_records()
+        s.validate_data()
         s.check_relatives(people)
         return people.append(s.relatives, ignore_index=True, sort=False)
 
