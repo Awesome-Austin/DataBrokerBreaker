@@ -78,7 +78,8 @@ class AbstractCollectr:
 
         self.relatives = self.relatives.append(r, ignore_index=True)
 
-    def validate_data(self):
+    def
+        (self):
         if len(self.df.index) == 0:
             return False
 
@@ -92,7 +93,6 @@ class AbstractCollectr:
                 top_city_index = 0
 
             city = r[1].top_city_states[top_city_index]
-
             try:
                 same_state = (
                         (city.get('state', '').lower() == self.person.state.lower()) or

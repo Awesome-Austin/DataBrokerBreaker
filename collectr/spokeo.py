@@ -29,7 +29,7 @@ class Spokeo(RequestCollectr):
     def __enter__(self):
         try:
             super(Spokeo, self).__enter__()
-            self.clean_data()
+            self.get_data()
         except NoRecords:
             pass
         return self
@@ -37,7 +37,7 @@ class Spokeo(RequestCollectr):
     def __exit__(self, exc_type, exc_val, exc_tb):
         super(Spokeo, self).__exit__(exc_type, exc_val, exc_tb)
 
-    def clean_data(self):
+    def get_data(self):
         def _set_1(soup):
             script = json.loads([tag for tag in soup.find(class_="list-view").find_all("div", {"class": 'panel'})
                                  if len(tag['class']) == 1][0].find("script").text)
@@ -63,82 +63,8 @@ class Spokeo(RequestCollectr):
 
         self.df = pd.merge(_set_1(self.soup), _set_2(self.soup), on='id', how='outer')
 
-    def validate_records(self):
-        if len(self.df.index) == 0:
-            return False
-
-        if len(self.df.index) == 1:
-            return True
-
-        print('\t** Validate Records **')
-        for i, r in self.df.iterrows():
-            top_city_index = r.top_city_states_best_match_index
-            if top_city_index is None:
-                top_city_index = 0
-
-            city = r.top_city_states[top_city_index]
-            if city['state'] in STATES.keys():
-                city['state'] = STATES[city['state']].title()
-
-            same_city_state = (city['city'].lower() == self.person.city.lower()
-                               and city['state'].lower() == self.person.state.lower())
-
-            same_first = self.person.first_name.lower() == r['main_name.first_name'].lower()
-            same_last = self.person.last_name.lower() == r['main_name.last_name'].lower()
-
-            try:
-                middle_as_first = self.person.middle_name.lower() == r['main_name.first_name'].lower()
-                middle_as_last = self.person.middle_name.lower() == r['main_name.last_name'].lower()
-            except AttributeError:
-                middle_as_first = False
-                middle_as_last = False
-
-            if not same_city_state or not ((same_first or middle_as_first) and (same_last or middle_as_last)):
-                aka = '; '.join(r.addl_full_names)
-                msg = "Do you want to keep {full_name} of {city}, {state}?{aka}".format(
-                    full_name=r.full_name,
-                    city=city['city'],
-                    state=city['state'],
-                    aka=' (aka {aka})'.format(aka=aka) if len(aka) > 0 else '')
-
-                try:
-                    if input(f'\t{msg}\t').lower()[0] != 'y':
-                        self.df.drop(i, inplace=True)
-                except IndexError:
-                    self.df.drop(i, inplace=True)
-        print('\t- {count} record{s} found'.format(count=len(self.df.index), s='s' if len(self.df.index) != 1 else ''))
-        print()
-        return True
-
-    def check_relatives(self, people=None):
-        if not self.person.check_family:
-            return False
-
-        try:
-            pr = pd.DataFrame([relative.split() for relative in [p for r in self.df['relatedTo'] for p in r]],
-                              columns=['first_name', 'last_name'])
-        except KeyError:
-            return False
-
-        if people is not None:
-            pr = pr[~((pr.first_name.isin(people.first_name)) & (pr.last_name.isin(people.last_name)))]
-
-        if len(pr.index) == 0:
-            return False
-
-        print('\t** Check Relatives **')
-        for i, r in pr.iterrows():
-            try:
-                msg = f'Would you like to add {r.first_name} {r.last_name}'
-                if input(f'\t{msg}?\t').lower()[0] == 'y':
-                    self._add_relative(r)
-            except IndexError:
-                pass
-        print()
-        return True
-
 
 if __name__ == '__main__':
     with Spokeo(TEST_PERSON, test=True) as s:
-        s.validate_records()
+        s.validate_data()
         s.check_relatives()
