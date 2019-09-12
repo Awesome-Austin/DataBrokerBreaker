@@ -77,7 +77,6 @@ def run_check(**kwargs):
     }))
 
 
-
 def main():
     people = PEOPLE
     people = check_people(people)
