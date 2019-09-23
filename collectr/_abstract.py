@@ -17,16 +17,6 @@ class NoSuchMethod(Exception): pass
 
 
 class AbstractCollectr:
-    """
-    Base DataFrame fields required for data passed through one of the collectrs:
-        first_name    -> str: 'Bruce"
-        last_name     -> str: 'Wayne'
-        full_name               -> str: 'Bruce Wayne'
-        city                    -> list if dicts:   [{city:'Gotham', state:'NY'}]
-        aka                     -> list of full names as str:     ['Dark Knight']
-        relatedTo               -> list of full names as str:     ['Alfred Pennyworth', 'Damian Wayne']
-    DataFrame can have more than this, but these are required for validate_data() and check_relatives()
-    """
     def __init__(self, person, base_url, **kwargs):
         self.site = type(self).__name__
         self.person = person
@@ -207,9 +197,21 @@ class AbstractCollectr:
                                                            s='s' if len(self.relatives) != 1 else ''))
         return True
 
-    def get_data(self): raise NoSuchMethod(f'"{self.site}" does not have function "get_data"')
+    def get_data(self):
+        """
+            Base DataFrame fields required for data passed through one of the collectrs:
+                first_name    -> str: 'Bruce"
+                last_name     -> str: 'Wayne'
+                full_name     -> str: 'Bruce Wayne'
+                city          -> list if dicts:   [{city:'Gotham', state:'NY'}]
+                aka           -> list of full names as str:     ['Dark Knight']
+                relatedTo     -> list of full names as str:     ['Alfred Pennyworth', 'Damian Wayne']
+            DataFrame can have more than this, but these are required for validate_data() and check_relatives()
+            """
+        raise NoSuchMethod(f'"{self.site}" does not have function "get_data"')
 
-    def get_soup(self): raise NoSuchMethod(f'"{self.site}" does not have function "get_soup"')
+    def get_soup(self):
+        raise NoSuchMethod(f'"{self.site}" does not have function "get_soup"')
 
 
 class RequestCollectr(AbstractCollectr):
