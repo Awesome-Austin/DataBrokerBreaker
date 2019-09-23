@@ -1,9 +1,7 @@
 import logging
-import requests
 import time
 import json
 from urllib.parse import urljoin
-from os import path, makedirs
 
 from bs4 import BeautifulSoup as bs
 from selenium.common.exceptions import StaleElementReferenceException
