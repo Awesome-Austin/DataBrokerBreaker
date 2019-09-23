@@ -83,21 +83,24 @@ class AbstractCollectr:
         if not path.exists(pic_dir):
             makedirs(pic_dir)
 
-        with open(path.join(pic_dir, output_file_name), 'wb') as f:
+        try:
             res = requests.get(url, allow_redirects=True, stream=True)
-            try:
-                res.raise_for_status()
-            except HTTPError as e:
-                if '404 Client Error' in e.args[0]:
-                    raise NoRecords(e.args[0])
-                else:
-                    raise e
-            if not res.ok:
-                print(res)
+            res.raise_for_status()
+        except Exception as e:
+            print(e)
+            return False
+        # if not res.ok:
+        #     print(res)
+        #     return False
+
+        output_file_name += f".{res.headers['content-type'].split('/')[1]}"
+
+        with open(path.join(pic_dir, output_file_name), 'wb') as f:
             for block in res.iter_content(1024):
                 if not block:
                     break
                 f.write(block)
+        return True
 
     def validate_data(self):
         if len(self.df.index) == 0:
@@ -173,12 +176,6 @@ class AbstractCollectr:
             pr['first_name'] = pr['name'].str.title().str.split().str[0]
             pr['last_name'] = pr['name'].str.title().str.split().str[-1]
             pr['middle_name'] = pr['name'].str.title().str.split().str[1:-1]
-
-            # pr = pd.DataFrame([{
-            #     'first_name': p['name'].title().split()[0],
-            #     'last_name': p['name'].title().split()[-1],
-            #     'middle_name': p['name'].title().split()[1:-1]
-            # } for r in self.df['relatedTo'] for p in r])
         except KeyError:
             return False
 
