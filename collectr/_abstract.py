@@ -19,8 +19,8 @@ class NoSuchMethod(Exception): pass
 class AbstractCollectr:
     """
     Base DataFrame fields required for data passed through one of the collectrs:
-        main_name.first_name    -> str: 'Bruce"
-        main_name.last_name     -> str: 'Wayne'
+        first_name    -> str: 'Bruce"
+        last_name     -> str: 'Wayne'
         full_name               -> str: 'Bruce Wayne'
         city                    -> list if dicts:   [{city:'Gotham', state:'NY'}]
         aka                     -> list of full names as str:     ['Dark Knight']
@@ -78,6 +78,27 @@ class AbstractCollectr:
 
         self.relatives = self.relatives.append(r, ignore_index=True)
 
+    def download_file(self, url, output_file_name):
+        pic_dir = path.join(self.save_dir, self.site)
+        if not path.exists(pic_dir):
+            makedirs(pic_dir)
+
+        with open(path.join(pic_dir, output_file_name), 'wb') as f:
+            res = requests.get(url, allow_redirects=True, stream=True)
+            try:
+                res.raise_for_status()
+            except HTTPError as e:
+                if '404 Client Error' in e.args[0]:
+                    raise NoRecords(e.args[0])
+                else:
+                    raise e
+            if not res.ok:
+                print(res)
+            for block in res.iter_content(1024):
+                if not block:
+                    break
+                f.write(block)
+
     def validate_data(self):
         if len(self.df.index) == 0:
             return False
@@ -85,6 +106,7 @@ class AbstractCollectr:
         if len(self.df.index) == 1:
             return True
         original_count = len(self.df.index)
+
         print(f'\t** Validate Records ({original_count}) **')
         for i, r in enumerate(self.df.iterrows()):
             top_city_index = r[1].top_city_states_best_match_index
@@ -104,19 +126,18 @@ class AbstractCollectr:
             except AttributeError:
                 same_city_state = False
 
-            same_first = self.person.first_name.lower() == r[1]['main_name.first_name'].lower()
-            same_last = self.person.last_name.lower() == r[1]['main_name.last_name'].lower()
+            same_first = self.person.first_name.lower() == r[1]['first_name'].lower()
+            same_last = self.person.last_name.lower() == r[1]['last_name'].lower()
 
             try:
-                middle_as_first = self.person.middle_name.lower() == r[1]['main_name.first_name'].lower()
-                middle_as_last = self.person.middle_name.lower() == r[1]['main_name.last_name'].lower()
+                middle_as_first = self.person.middle_name.lower() == r[1]['first_name'].lower()
+                middle_as_last = self.person.middle_name.lower() == r[1]['last_name'].lower()
             except AttributeError:
                 middle_as_first = False
                 middle_as_last = False
 
             aka = '; '.join(r[1].addl_full_names)
             if not same_city_state or not ((same_first or middle_as_first) and (same_last or middle_as_last)):
-
                 msg = "{:{ocl}d}) Do you want to keep {full_name} of {city}, {state}?{aka}".format(
                     i + 1,
                     ocl=len(str(original_count)),
@@ -124,12 +145,12 @@ class AbstractCollectr:
                     city=city['city'],
                     state=city['state'],
                     aka=' (aka {aka})'.format(aka=aka) if len(aka) > 0 else '')
-
                 try:
                     if input(f'\t{msg}\t').lower()[0] != 'y':
-                        self.df.drop(i, inplace=True)
+                        self.df.drop(index=r[0], inplace=True)
                 except IndexError:
-                    self.df.drop(i, inplace=True)
+                    self.df.drop(index=r[0], inplace=True)
+
             else:
                 msg = "{:{ocl}d})                kept {full_name} of {city}, {state}.{aka}".format(
                     i + 1,
@@ -147,15 +168,22 @@ class AbstractCollectr:
     def check_relatives(self, people=None):
         if not self.person.check_family:
             return False
-
         try:
-            pr = pd.DataFrame([{'first_name': p.title().split()[0], 'last_name': p.title().split()[-1], 'middle_name': p.title().split()[1:-1]} for r in self.df['relatedTo'] for p in r])
+            pr = pd.DataFrame([n for d in self.df['relatedTo'] for n in d])
+            pr['first_name'] = pr['name'].str.title().str.split().str[0]
+            pr['last_name'] = pr['name'].str.title().str.split().str[-1]
+            pr['middle_name'] = pr['name'].str.title().str.split().str[1:-1]
+
+            # pr = pd.DataFrame([{
+            #     'first_name': p['name'].title().split()[0],
+            #     'last_name': p['name'].title().split()[-1],
+            #     'middle_name': p['name'].title().split()[1:-1]
+            # } for r in self.df['relatedTo'] for p in r])
         except KeyError:
             return False
 
         if len(pr.index) == 0:
             return False
-
         if people is not None:
             pr = pr[~((pr.first_name.isin(people.first_name)) & (pr.last_name.isin(people.last_name)))]
 
@@ -165,6 +193,7 @@ class AbstractCollectr:
         orc = len(pr)
         print(f'\t** Check Relatives ({orc}) **')
         for i, r in enumerate(pr.iterrows()):
+
             try:
                 msg = '{:{orc}d}) Would you like to add {first_name}{middle_name} {last_name}'.format(
                     i + 1,

@@ -9,7 +9,7 @@ def check_people(people):
     i = 0
     while i < len(people.index):
         person = people.iloc[i]
-        people = check_person(person)
+        people = check_person(person, people)
         i += 1
         print()
     return people

@@ -7,12 +7,12 @@ FILES_DIR = os.path.join(ROOT_DIR, 'files')
 OUTPUT_DIR = os.path.join(FILES_DIR, 'output')
 NAMES_DIR = os.path.join(FILES_DIR, 'names.csv')
 PEOPLE = pd.read_csv(NAMES_DIR, index_col=0)
-SCROLL_PAUSE_TIME = 1
+SCROLL_PAUSE_TIME = 1.5
 with open(os.path.join(FILES_DIR, 'email.txt')) as f:
     EMAIL = f.readlines()[0].strip()
 
-STATES = {'AL': 'ALABAMA','AK': 'ALASKA', 'AZ': 'ARIZONA', 'AR': 'ARKANSAS', 'CA': 'CALIFORNIA', 'CO': 'COLORADO',
-          'CT': 'CONNECTICUT', 'DE': 'DELAWARE', 'FL': 'FLORIDA', 'GA': 'GEORGIA','HI': 'HAWAII','ID': 'IDAHO',
+STATES = {'AL': 'ALABAMA', 'AK': 'ALASKA', 'AZ': 'ARIZONA', 'AR': 'ARKANSAS', 'CA': 'CALIFORNIA', 'CO': 'COLORADO',
+          'CT': 'CONNECTICUT', 'DE': 'DELAWARE', 'FL': 'FLORIDA', 'GA': 'GEORGIA', 'HI': 'HAWAII', 'ID': 'IDAHO',
           'IL': 'ILLINOIS', 'IN': 'INDIANA', 'IA': 'IOWA', 'KS': 'KANSAS', 'KY': 'KENTUCKY', 'LA': 'LOUISIANA',
           'ME': 'MAINE', 'MD': 'MARYLAND', 'MA': 'MASSACHUSETTS', 'MI': 'MICHIGAN', 'MN': 'MINNESOTA',
           'MS': 'MISSISSIPPI', 'MO': 'MISSOURI', 'MT': 'MONTANA', 'NE': 'NEBRASKA', 'NV': 'NEVADA',
@@ -22,4 +22,10 @@ STATES = {'AL': 'ALABAMA','AK': 'ALASKA', 'AZ': 'ARIZONA', 'AR': 'ARKANSAS', 'CA
           'UT': 'UTAH', 'VT': 'VERMONT', 'VA': 'VIRGINIA', 'WA': 'WASHINGTON', 'WV': 'WEST VIRGINIA', 'WI': 'WISCONSIN',
           'WY': 'WYOMING', 'GU': 'GUAM', 'PR': 'PUERTO RICO', 'VI': 'VIRGIN ISLANDS'}
 
-TEST_PERSON = pd.Series({'first_name': 'John', 'last_name': 'Smith', 'city': '', 'state': 'Ca', 'check_family': False})
+TEST_PERSON = pd.Series(
+    {'first_name': 'John',
+     'last_name': 'Smith',
+     'city': None,
+     'state': 'Ca',
+     'check_family': False}
+)
