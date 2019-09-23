@@ -137,15 +137,19 @@ class MyLife(SeleniumCollectr):
             page_source = driver.page_source
         s = bs(page_source, 'html.parser')
         self.df = pd.DataFrame([_get_data(hit) for hit in s.find_all(class_='ais-InfiniteHits-item')])
+        self.df.set_index('id')
         return True
 
     def deep_data(self):
         def _deep_data(url):
             with self.driver() as driver:
+                # print(url)
                 driver.fullscreen_window()
                 driver.get(url)
+                # time.sleep(.5)
                 txt = driver.page_source
             soup = bs(txt, 'html.parser')
+            # print(soup.prettify())
 
             profile_data = json.loads(soup.find(type="application/ld+json").text)
             profile_data['id'] = profile_data.pop('@id').split('/')[-1]
@@ -165,7 +169,34 @@ class MyLife(SeleniumCollectr):
                 'city': profile_data['address']['addressLocality'],
                 'state': profile_data['address']['addressRegion']
             }
+
+            profile_data['reputation_score'] = soup.find_all(class_='profile-score-display-number')[1].text
+
+            profile_data['alert'] = {a.text for a in soup.find_all(class_='ln-flags-item')}
+
+            addresses = []
+            for a in soup.find(class_='contact-section-addresses').find_all('a', href=True):
+                u = a['href'].split('/')
+                if 'address' in u[3]:
+                    street, city, state, postal = u[3:]
+                    addresses.append({
+                        'street': street.replace('address-', '').replace("_", " "),
+                        'city': city,
+                        'state': state,
+                        'postal_code': postal,
+                        'url': a['href']
+                    })
+
+            profile_data['addresses'] = addresses
+
             profile_data['aka'] = profile_data.pop('alternateName')
+
+            social = [
+                (s.text, s['href']) for s in
+                soup.find(class_='contact-section-socials').find_all('a', href=True)
+            ]
+            profile_data['social'] = social
+
             relatives = soup.find_all(class_='relative-section-item-details')
             profile_data['relatedTo'] = [{
                 'name': r.find('a').get_text().title(),
@@ -181,25 +212,24 @@ class MyLife(SeleniumCollectr):
                 'city': [a.get_text() for a in n.find_all('span', {'class': ''})],
             } for n in neighbors]
 
-            profile_data['pics'] = [p.get('data-src', None) for p in soup.find(class_='photo-section-items').find_all('img')]
+            pics = soup.find(class_='photo-section-items').find_all('img')
+            profile_data['pics'] = [p.get('data-src', None) for p in pics if p.get('data-src', None) is not None]
 
             return profile_data
 
-        df = pd.DataFrame([_deep_data(sdf.url) for i, sdf in self.df.iterrows()], index=['id'])
+        df = pd.DataFrame([_deep_data(df.url) for i, df in self.df.iterrows()])
+        df.set_index('id')
         self.df = df
 
     def validate_data(self):
         super(MyLife, self).validate_data()
         self.deep_data()
-        # for i, p in self.df.iterrows():
-        #     if p.picture_url:
-        #         self.download_file(p.picture_url, f'{p.id}_{i}.jpg')
+        for i, p in self.df.iterrows():
+            for pic in p.pics:
+                self.download_file(pic, f'{p.id}_{i}')
 
 
 if __name__ == '__main__':
-    TEST_PERSON = pd.Series({'first_name': 'Atticus', 'last_name': 'Gifford', 'city': 'Glendale', 'state': 'CA', 'check_family': True})
-
     with MyLife(TEST_PERSON, test=True) as ml:
         ml.validate_data()
         ml.check_relatives()
-        pass
