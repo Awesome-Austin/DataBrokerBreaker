@@ -1,6 +1,7 @@
 import logging
 import requests
 import time
+import json
 from urllib.parse import urljoin
 from os import path, makedirs
 
@@ -27,6 +28,7 @@ class MyLife(SeleniumCollectr):
             first=self.person.first_name,
             last=self.person.last_name))
         self.auto_scroll = kwargs.get('auto_scroll', True)
+
     def __enter__(self):
         try:
             super(MyLife, self).__enter__()
@@ -39,20 +41,16 @@ class MyLife(SeleniumCollectr):
         super(MyLife, self).__exit__(exc_type, exc_val, exc_tb)
 
     def get_data(self):
-        def _get_data(s):
-            hit_name = s.find(class_='hit-name')
+        def _get_data(hit):
+            hit_name = hit.find(class_='hit-name')
             url = hit_name.get('href')
             hit_id = url.split('/')[-1]
             name = hit_name.get_text().split(',')[0].title()
-            try:
-                age = int(hit_name.get_text().split(',')[1])
-            except IndexError:
-                age = None
 
-            current_city = s.find(class_='hit-location').get_text().upper()
+            current_city = hit.find(class_='hit-location').get_text().upper()
             try:
                 top_city_states = [a.get('title').upper() for a in
-                                   s.find(class_='hit-pastAddresses').find_all(class_='hit-values')]
+                                   hit.find(class_='hit-pastAddresses').find_all(class_='hit-values')]
             except AttributeError:
                 top_city_states = []
 
@@ -66,50 +64,25 @@ class MyLife(SeleniumCollectr):
                                [a.split(', ') for a in top_city_states]]
 
             try:
-                relatives = [r.get('title') for r in s.find(class_='hit-relatives').find_all(class_='hit-values')]
-            except AttributeError:
-                relatives = []
-
-            try:
-                akas = [r.get('title').title() for r in
-                        s.find(class_='hit-akas').find_all(class_='hit-values')]
-            except AttributeError:
-                akas = []
-
-            try:
-                job = s.find(class_='hit-work').find(class_='hit-values').get_text().title()
+                job = hit.find(class_='hit-work').find(class_='hit-values').get_text().title()
             except AttributeError:
                 job = ''
 
             try:
-                school = s.find(class_='hit-high-school').find(class_='hit-values').get_text().title()
+                school = hit.find(class_='hit-high-school').find(class_='hit-values').get_text().title()
             except AttributeError:
                 school = ''
 
-            rep_score = tuple([s.get_text() for s in s.find_all(class_='hit-reputation-score')])
-
-            alert = [a.get_text() for a in s.find_all(class_='hit-alert') if a.get_text() != 'ALERT: ']
-
-            picture_url = s.find(class_='profile-pic').get('src')
-            if picture_url == '/global/img/profile-placeholder.png':
-                picture_url = None
-
             return {
                 'id': hit_id,
-                'main_name.first_name': name.split()[0],
-                'main_name.last_name': name.split()[-1],
-                'relatedTo': relatives,
+                'first_name': name.split()[0],
+                'last_name': name.split()[-1],
                 'url': url,
                 'full_name': name,
-                'age': age,
                 'top_city_states': top_city_states,
                 'top_city_states_best_match_index': top_city_states_best_match_index,
-                'addl_full_names': akas,
                 'work': job,
-                'reputation_score': rep_score,
                 'school': school,
-                'picture_url': picture_url,
-                'alert': alert,
             }
 
         with self.driver() as driver:
@@ -122,13 +95,12 @@ class MyLife(SeleniumCollectr):
                         "refinementList-text"):
                     if state in option.text.upper():
                         option.click()
-                        time.sleep(1)
+                        time.sleep(2)
                         break
                 else:
                     return False
             except AttributeError:
                 pass
-
             except StaleElementReferenceException as e:
                 ChromeCrash(e)
 
@@ -138,13 +110,12 @@ class MyLife(SeleniumCollectr):
                         "refinementList-text"):
                     if city in option.text.title():
                         option.click()
-                        time.sleep(1)
+                        time.sleep(2)
                         break
                 else:
                     return False
             except AttributeError:
                 pass
-
             except StaleElementReferenceException as e:
                 ChromeCrash(e)
 
@@ -164,30 +135,71 @@ class MyLife(SeleniumCollectr):
                     last_height = new_height
 
             page_source = driver.page_source
-
-        hits = bs(page_source, 'html.parser').find_all(class_="ais-InfiniteHits-item")
-        self.df = pd.DataFrame([_get_data(hit) for hit in hits])
+        s = bs(page_source, 'html.parser')
+        self.df = pd.DataFrame([_get_data(hit) for hit in s.find_all(class_='ais-InfiniteHits-item')])
         return True
+
+    def deep_data(self):
+        def _deep_data(url):
+            with self.driver() as driver:
+                driver.fullscreen_window()
+                driver.get(url)
+                txt = driver.page_source
+            soup = bs(txt, 'html.parser')
+
+            profile_data = json.loads(soup.find(type="application/ld+json").text)
+            profile_data['id'] = profile_data.pop('@id').split('/')[-1]
+            profile_data.pop('@context')
+            profile_data.pop('@type')
+
+            about = profile_data.pop('about')
+            for k, v in about.items():
+                profile_data[k] = v
+
+            # print(profile_data)
+            full_name = profile_data.pop('name')
+            profile_data['first_name'] = full_name.split()[0]
+            profile_data['last_name'] = full_name.split()[1]
+            profile_data['full_name'] = full_name
+            profile_data['city'] = {
+                'city': profile_data['address']['addressLocality'],
+                'state': profile_data['address']['addressRegion']
+            }
+            profile_data['aka'] = profile_data.pop('alternateName')
+            relatives = soup.find_all(class_='relative-section-item-details')
+            profile_data['relatedTo'] = [{
+                'name': r.find('a').get_text().title(),
+                'url': urljoin(self.base_url, r.find('a').get('href')),
+                'city': r.find('span').get_text().split(', ')[0].title(),
+                'state': r.find('span').get_text().split(', ')[1].upper()
+            } for r in relatives]
+
+            neighbors = soup.find_all(class_='neighbors-section-item-details')
+            profile_data['neighbors'] = [{
+                'name': n.find('a').get_text().title(),
+                'url': urljoin(self.base_url, n.find('a').get('href')),
+                'city': [a.get_text() for a in n.find_all('span', {'class': ''})],
+            } for n in neighbors]
+
+            profile_data['pics'] = [p.get('data-src', None) for p in soup.find(class_='photo-section-items').find_all('img')]
+
+            return profile_data
+
+        df = pd.DataFrame([_deep_data(sdf.url) for i, sdf in self.df.iterrows()], index=['id'])
+        self.df = df
 
     def validate_data(self):
         super(MyLife, self).validate_data()
-        for i, p in self.df.iterrows():
-            if p.picture_url:
-                pic_dir = path.join(self.save_dir, self.site)
-                if not path.exists(pic_dir):
-                    makedirs(pic_dir)
-
-                with open(path.join(pic_dir, f'{p.id}.jpg'), 'wb') as f:
-                    res = requests.get(p.picture_url, allow_redirects=True, stream=True)
-                    if not res.ok:
-                        print(res)
-                    for block in res.iter_content(1024):
-                        if not block:
-                            break
-                        f.write(block)
+        self.deep_data()
+        # for i, p in self.df.iterrows():
+        #     if p.picture_url:
+        #         self.download_file(p.picture_url, f'{p.id}_{i}.jpg')
 
 
 if __name__ == '__main__':
+    TEST_PERSON = pd.Series({'first_name': 'Atticus', 'last_name': 'Gifford', 'city': 'Glendale', 'state': 'CA', 'check_family': True})
+
     with MyLife(TEST_PERSON, test=True) as ml:
         ml.validate_data()
-
+        ml.check_relatives()
+        pass

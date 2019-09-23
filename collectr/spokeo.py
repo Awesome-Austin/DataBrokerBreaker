@@ -41,14 +41,10 @@ class Spokeo(RequestCollectr):
         def _set_1(soup):
             script = json.loads([tag for tag in soup.find(class_="list-view").find_all("div", {"class": 'panel'})
                                  if len(tag['class']) == 1][0].find("script").text)
-            df = json_normalize(script)
+            df = pd.DataFrame(script)
             df['id'] = df['url'].str.split('/').str[-1].str[1:]
             df.drop(columns=['@context', '@type'], inplace=True)
-            df.rename(columns={'main_name.first_name': 'first_name',
-                               'main_name.middle_name': 'middle_name',
-                               'main_name.last_name': 'last_name'}, inplace=True)
             df['homeLocation'] = [[a['address'] for a in d] for d in df['homeLocation']]
-            df['relatedTo'] = [[n['name'] for n in d] for d in df['relatedTo']]
             df['additionalName'] = [[tuple(n.split()) for n in d] for d in df['additionalName']]
             df.set_index('id', inplace=True)
             return df
@@ -58,10 +54,15 @@ class Spokeo(RequestCollectr):
                                                tag.text.replace('var __PRELOADED_STATE__ = ', '') for tag in
                                                soup.find('div', {'id': 'root'}).find_all("script") if
                                                'var __PRELOADED_STATE__ = ' in tag.text][0])['people'])
-            df.set_index('id', inplace=True)
             return df
 
-        self.df = pd.merge(_set_1(self.soup), _set_2(self.soup), on='id', how='outer')
+        df = pd.merge(_set_1(self.soup), _set_2(self.soup), on='id', how='outer')
+        df.set_index('id', inplace=True)
+        df.rename(columns={'main_name.first_name': 'first_name',
+                           'main_name.middle_name': 'middle_name',
+                           'main_name.last_name': 'last_name'}, inplace=True)
+
+        self.df = df
 
 
 if __name__ == '__main__':
