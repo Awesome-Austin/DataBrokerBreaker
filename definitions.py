@@ -25,7 +25,7 @@ STATES = {'AL': 'ALABAMA', 'AK': 'ALASKA', 'AZ': 'ARIZONA', 'AR': 'ARKANSAS', 'C
 TEST_PERSON = pd.Series(
     {'first_name': 'John',
      'last_name': 'Smith',
-     'city': None,
+     'city': 'Los Angeles',
      'state': 'Ca',
      'check_family': False}
 )

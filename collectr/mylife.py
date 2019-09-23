@@ -216,7 +216,7 @@ class MyLife(SeleniumCollectr):
             return profile_data
 
         df = pd.DataFrame([_deep_data(df.url) for i, df in self.df.iterrows()])
-        df.set_index('id')
+        df.set_index('id', inplace=True)
         self.df = df
 
     def validate_data(self):
