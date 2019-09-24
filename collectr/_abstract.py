@@ -10,10 +10,12 @@ from bs4 import BeautifulSoup as bs
 from definitions import OUTPUT_DIR, STATES
 
 
-class NoRecords(Exception): pass
+class NoRecords(Exception):
+    pass
 
 
-class NoSuchMethod(Exception): pass
+class NoSuchMethod(Exception):
+    pass
 
 
 class AbstractCollectr:
@@ -30,9 +32,9 @@ class AbstractCollectr:
         for k, v in kwargs.items():
             self.__setattr__(k, v)
 
-        self.save_dir = path.join(OUTPUT_DIR, '{test}{first_name}_{last_name}'.format(
-            first_name=self.person.first_name,
-            last_name=self.person.last_name,
+        self.save_dir = path.join(OUTPUT_DIR, '{test}{givenName}_{familyName}'.format(
+            givenName=self.person.givenName,
+            familyName=self.person.familyName,
             test='__test__' if self.test else ''
         ))
 
@@ -52,14 +54,14 @@ class AbstractCollectr:
         self.df.to_csv(path.join(self.save_dir, file_name))
 
     def _add_relative(self, r):
-        if 'state' not in r.index:
-            r['state'] = input('\t\tPlease enter state: ').strip().title()
+        if 'addressRegion' not in r.index:
+            r['addressRegion'] = input('\t\tPlease enter state: ').strip().title()
 
-        if 'city' not in r.index:
-            r['city'] = input('\t\tPlease enter City: ').strip().title()
+        if 'addressLocality' not in r.index:
+            r['addressLocality'] = input('\t\tPlease enter City: ').strip().title()
 
-        if 'middle_name' not in r.index:
-            r['middle_name'] = input('\t\tPlease enter middle name: ').strip().title()
+        if 'additionalName' not in r.index:
+            r['additionalName'] = input('\t\tPlease enter middle name: ').strip().title()
 
         try:
             r['check_family'] = bool(input('\t\tCheck relatives?: ').lower()[0] == 'y')
@@ -79,9 +81,6 @@ class AbstractCollectr:
         except Exception as e:
             print(e)
             return False
-        # if not res.ok:
-        #     print(res)
-        #     return False
 
         output_file_name += f".{res.headers['content-type'].split('/')[1]}"
 
@@ -102,41 +101,34 @@ class AbstractCollectr:
 
         print(f'\t** Validate Records ({original_count}) **')
         for i, r in enumerate(self.df.iterrows()):
-            top_city_index = r[1].top_city_states_best_match_index
-            if top_city_index is None:
-                top_city_index = 0
 
-            city = r[1].top_city_states[top_city_index]
+            address = r[1].address[r[1].get('top_city_states_best_match_index', 0)]
+            address_region = address.get('addressRegion', '').lower()
+            person_address_region = self.person.get('addressRegion', '').lower()
 
-            try:
-                same_state = (
-                        (city.get('state', '').lower() == self.person.state.lower()) or
-                        (city.get('state', '').lower() == STATES.get(self.person.state.upper(), '').lower()) or
-                        (STATES.get(city.get('state', '').upper(), '').lower() == self.person.state.lower()))
-                same_city = city.get('city', '').lower() == self.person.city.lower()
-                same_city_state = same_city and same_state
+            same_state = (
+                    (address_region == person_address_region) or
+                    (address_region == STATES.get(person_address_region.upper(), '').lower()) or
+                    (STATES.get(address_region.upper(), '').lower() == person_address_region))
 
-            except AttributeError:
-                same_city_state = False
+            same_city = address.get('addressLocality', '').lower() == self.person.addressLocality.lower()
 
-            same_first = self.person.first_name.lower() == r[1]['first_name'].lower()
-            same_last = self.person.last_name.lower() == r[1]['last_name'].lower()
+            # same_city_state = same_city and same_state
 
-            try:
-                middle_as_first = self.person.middle_name.lower() == r[1]['first_name'].lower()
-                middle_as_last = self.person.middle_name.lower() == r[1]['last_name'].lower()
-            except AttributeError:
-                middle_as_first = False
-                middle_as_last = False
+            same_first = self.person.givenName.lower() == r[1]['givenName'].lower()
+            same_last = self.person.familyName.lower() == r[1]['familyName'].lower()
 
-            aka = '; '.join(r[1].addl_full_names)
-            if not same_city_state or not ((same_first or middle_as_first) and (same_last or middle_as_last)):
+            middle_as_first = self.person.get('additionalName', '').lower() == r[1]['givenName'].lower()
+            middle_as_last = self.person.get('additionalName', '').lower() == r[1]['familyName'].lower()
+
+            aka = '; '.join(r[1].get('addl_full_names', []))
+            if not (same_city and same_state) or not ((same_first or middle_as_first) and (same_last or middle_as_last)):
                 msg = "{:{ocl}d}) Do you want to keep {full_name} of {city}, {state}?{aka}".format(
                     i + 1,
                     ocl=len(str(original_count)),
-                    full_name=r[1].full_name,
-                    city=city['city'],
-                    state=city['state'],
+                    full_name=r[1].get('name', r[0]),
+                    city=address['addressLocality'],
+                    state=address['addressRegion'],
                     aka=' (aka {aka})'.format(aka=aka) if len(aka) > 0 else '')
                 try:
                     if input(f'\t{msg}\t').lower()[0] != 'y':
@@ -149,8 +141,8 @@ class AbstractCollectr:
                     i + 1,
                     ocl=len(str(original_count)),
                     full_name=r[1].full_name,
-                    city=city['city'],
-                    state=city['state'],
+                    city=address['addressLocality'],
+                    state=address['addressRegion'],
                     aka=' (aka {aka})'.format(aka=aka) if len(aka) > 0 else '')
                 print(f'\t{msg}')
 
@@ -163,16 +155,17 @@ class AbstractCollectr:
             return False
         try:
             pr = pd.DataFrame([n for d in self.df['relatedTo'] for n in d])
-            pr['first_name'] = pr['name'].str.title().str.split().str[0]
-            pr['last_name'] = pr['name'].str.title().str.split().str[-1]
-            pr['middle_name'] = pr['name'].str.title().str.split().str[1:-1]
+            pr['givenName'] = pr['name'].str.title().str.split().str[0]
+            pr['familyName'] = pr['name'].str.title().str.split().str[-1]
+            pr['additionalName'] = pr['name'].str.title().str.split().str[1:-1]
         except KeyError:
             return False
 
         if len(pr.index) == 0:
             return False
+
         if people is not None:
-            pr = pr[~((pr.first_name.isin(people.first_name)) & (pr.last_name.isin(people.last_name)))]
+            pr = pr[~((pr.givenName.isin(people.givenName)) & (pr.last_name.isin(people.familyName)))]
 
         if len(pr.index) == 0:
             return False
@@ -185,9 +178,9 @@ class AbstractCollectr:
                 msg = '{:{orc}d}) Would you like to add {first_name}{middle_name} {last_name}'.format(
                     i + 1,
                     orc=len(str(orc)),
-                    first_name=r[1].first_name,
-                    middle_name=' ' + ' '.join(r[1].middle_name) if len(r[1].middle_name) > 0 else '',
-                    last_name=r[1].last_name
+                    first_name=r[1].givenName,
+                    middle_name=' ' + ' '.join(r[1].additionalName) if len(r[1].additionalName) > 0 else '',
+                    last_name=r[1].familyName
                 )
                 if input(f'\t{msg}?\t').lower()[0] == 'y':
                     self._add_relative(r[1])
@@ -198,16 +191,6 @@ class AbstractCollectr:
         return True
 
     def get_data(self):
-        """
-            Base DataFrame fields required for data passed through one of the collectrs:
-                first_name    -> str: 'Bruce"
-                last_name     -> str: 'Wayne'
-                full_name     -> str: 'Bruce Wayne'
-                city          -> list if dicts:   [{city:'Gotham', state:'NY'}]
-                aka           -> list of full names as str:     ['Dark Knight']
-                relatedTo     -> list of full names as str:     ['Alfred Pennyworth', 'Damian Wayne']
-            DataFrame can have more than this, but these are required for validate_data() and check_relatives()
-            """
         raise NoSuchMethod(f'"{self.site}" does not have function "get_data"')
 
     def get_soup(self):

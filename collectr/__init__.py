@@ -1,7 +1,11 @@
-from collectr.spokeo import Spokeo
 from collectr.mylife import MyLife
+from collectr.radaris import Radaris
+from collectr.spokeo import Spokeo
+from collectr.whitepages import WhitePages
 
 COLLECTRS = (
-    Spokeo,
     MyLife,
+    Radaris,
+    Spokeo,
+    WhitePages
 )

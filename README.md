@@ -90,7 +90,8 @@ If possible use a masked email; The emails are often delayed, so a temp email (e
 <i>WhitePages requires the use of a phone number order to complete their opt-out process and remove your information from their database.</i>
 
 #### Opt Out Steps
-0) Go to whitepages.com. Type your name in the search box.
+0) Go to `whitepages.com`.
+0) Type your name in the search box.
 0) Find your listing and click `View Details`, and you'll be taken to your listing with your personal information.
 0) Copy the URL of your page.
 0) Go to their [opt-out page](https://www.whitepages.com/suppression_requests), and paste the URL to your listing.

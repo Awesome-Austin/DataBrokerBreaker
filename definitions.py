@@ -23,9 +23,9 @@ STATES = {'AL': 'ALABAMA', 'AK': 'ALASKA', 'AZ': 'ARIZONA', 'AR': 'ARKANSAS', 'C
           'WY': 'WYOMING', 'GU': 'GUAM', 'PR': 'PUERTO RICO', 'VI': 'VIRGIN ISLANDS'}
 
 TEST_PERSON = pd.Series(
-    {'first_name': 'John',
-     'last_name': 'Smith',
-     'city': 'Los Angeles',
-     'state': 'Ca',
+    {'givenName': 'John',
+     'familyName': 'Smith',
+     'addressLocality': 'Los Angeles',
+     'addressRegion': 'Ca',
      'check_family': False}
 )
