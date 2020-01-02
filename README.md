@@ -54,7 +54,7 @@ If possible use a masked email; The emails are often delayed, so a temp email (e
 0) Within a few minutes, you will get an email telling you that they have received your request and will fulfill it in 7-10 business days. 
 
 #### If MyLife Still Refuses to Remove Your Info:
-0) Email them at `privacy@mylife.com` using the following template:
+Email them at `privacy@mylife.com` using the following template:
         
         Hello,
         I am a vitim of stalking. I demand my Personal Identifiable information opted-out from your site and service, and all those you own.
@@ -72,7 +72,7 @@ If possible use a masked email; The emails are often delayed, so a temp email (e
 <i>Radaris requires the creation of an account on their website in order to complete their opt-out process and remove your information from their database.</i>
 
 #### Opt Out Steps
-0) Go to https://radaris.com/ and search for your listing.
+1) Go to https://radaris.com/ and search for your listing.
 0) Find it and click `Full Profile`.
 0) Roll over the arrow next to `Background Check & Contact Info`, and click `Control Info`.
 0) Click `Control Info` (it may say `Manage Info`).
@@ -90,7 +90,7 @@ If possible use a masked email; The emails are often delayed, so a temp email (e
 <i>WhitePages requires the use of a phone number order to complete their opt-out process and remove your information from their database.</i>
 
 #### Opt Out Steps
-0) Go to whitepages.com. Type your name in the search box.
+1) Go to whitepages.com. Type your name in the search box.
 0) Find your listing and click `View Details`, and you'll be taken to your listing with your personal information.
 0) Copy the URL of your page.
 0) Go to their [opt-out page](https://www.whitepages.com/suppression_requests), and paste the URL to your listing.
@@ -113,7 +113,7 @@ If possible use a masked email; The emails are often delayed, so a temp email (e
 <i>Intelius requires the use of an email address order to complete their opt-out process and remove your information from their database.</i>
 
 #### Opt Out Steps
-0) Go to their [opt-out page](http://intelius.com/optout) and search for your listing.
+1) Go to their [opt-out page](http://intelius.com/optout) and search for your listing.
 0) Find your listing and click `select and continue`.
 0) Enter your email address (we recommend using a masked email), perform the CAPTCHA, and click `continue`.
 0) You will be shown a page saying that a verification link was sent to your email.
@@ -128,7 +128,7 @@ If possible use a masked email; The emails are often delayed, so a temp email (e
 <i>BeenVerified requires the use of an email address order to complete their opt-out process and remove your information from their database.</i>
 
 #### Opt Out Steps
-0) Go to their [opt-out page](https://www.beenverified.com/f/optout/search) and search for your listing by putting your first and last name.
+1) Go to their [opt-out page](https://www.beenverified.com/f/optout/search) and search for your listing by putting your first and last name.
 0) Find for your listing and click on the arrow to the right of the box.
 0) Enter your email address (we recommend using a masked email) and perform the CAPTCHA.
 0) A confirmation email will be sent to you within a few minutes.
@@ -139,7 +139,7 @@ If possible use a masked email; The emails are often delayed, so a temp email (e
 ### [FamilyTreeNow](https://www.familytreenow.com)
 
 #### Opt Out Steps
-0) Go to the [opt-out page](https://www.familytreenow.com/optout/beginoptout).
+1) Go to the [opt-out page](https://www.familytreenow.com/optout/beginoptout).
 0) perform the CAPTCHA at the bottom of the page.
 0) Run a search.
 0) Find yourself in the results, click on the record detail.
