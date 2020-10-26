@@ -4,8 +4,8 @@ import requests
 from bs4 import BeautifulSoup as bs
 import pandas as pd
 
-from collectr._abstract import RequestCollectr, SeleniumCollectr, NoRecords
-from definitions import TEST_PERSON, STATES
+from abstracts import RequestCollectr, NoRecords
+from definitions import TEST_PERSON
 
 BASE_URL = 'https://radaris.com/'
 
@@ -68,10 +68,8 @@ class Radaris(RequestCollectr):
     def validate_data(self):
         super(Radaris, self).validate_data()
 
+
 if __name__ == '__main__':
-    TEST_PERSON.first_name = 'Austin'
-    TEST_PERSON.last_name = 'gifford'
-    TEST_PERSON.city = 'Antioch'
     with Radaris(TEST_PERSON, test=True) as rad:
         rad.validate_data()
         rad.check_relatives()
