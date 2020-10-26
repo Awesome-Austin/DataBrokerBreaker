@@ -6,7 +6,7 @@ import pandas as pd
 from pandas.io.json import json_normalize
 
 from definitions import STATES, TEST_PERSON
-from collectr._abstract import RequestCollectr, NoRecords
+from abstracts import RequestCollectr, NoRecords
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logging.disable(logging.CRITICAL)
