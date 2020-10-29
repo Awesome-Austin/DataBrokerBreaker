@@ -8,7 +8,7 @@ from selenium.common.exceptions import StaleElementReferenceException
 import pandas as pd
 
 from definitions import STATES, TEST_PERSON, SCROLL_PAUSE_TIME
-from abstracts import SeleniumCollectr, NoRecords
+from abstracts import SeleniumCollector, NoRecords
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logging.disable(logging.CRITICAL)
@@ -19,7 +19,7 @@ BASE_URL = 'https://www.mylife.com/'
 class ChromeCrash(StaleElementReferenceException): pass
 
 
-class MyLife(SeleniumCollectr):
+class MyLife(SeleniumCollector):
     def __init__(self, person, **kwargs):
         super(MyLife, self).__init__(person, BASE_URL, **kwargs)
         self.url = urljoin(self.base_url, "pub-multisearch.pubview?search={first}+{last}".format(

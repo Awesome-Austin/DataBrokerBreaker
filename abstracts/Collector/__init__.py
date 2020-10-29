@@ -1,2 +1,2 @@
-from .main import RequestCollectr, SeleniumCollectr, AbstractCollectr
+from .main import RequestCollector, SeleniumCollector, AbstractCollector
 # from .errors import CollectrErrors, NoRecords, NoSuchMethod, SiteSchemaChange
