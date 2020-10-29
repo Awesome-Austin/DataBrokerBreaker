@@ -6,6 +6,11 @@ from definitions import PEOPLE, NAMES_DIR
 
 
 def check_people(people):
+    """
+
+    :param people:
+    :return:
+    """
     i = 0
     while i < len(people.index):
         person = people.iloc[i]
@@ -16,6 +21,12 @@ def check_people(people):
 
 
 def check_person(person, people=pd.DataFrame()):
+    """
+
+    :param person:
+    :param people:
+    :return:
+    """
     print(f'== {person.first_name} {person.last_name} ==')
 
     for collectr in COLLECTRS:
@@ -23,7 +34,7 @@ def check_person(person, people=pd.DataFrame()):
             try:
                 with collectr(person) as c:
                     c.validate_data()
-                    c.check_relatives(people)
+                    c.matching_relatives(people)
                     relatives = c.relatives
                 break
             except Exception as e:

@@ -1,7 +1,7 @@
 import os
 
 from definitions import OUTPUT_DIR
-from removr.spokeo import SpokeoRemovr
+from removers.spokeo import SpokeoRemovr
 
 # for folder_name, subfolders, filenames in os.walk(OUTPUT_DIR):
 #     print(folder_name)

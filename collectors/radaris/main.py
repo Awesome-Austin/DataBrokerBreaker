@@ -4,13 +4,13 @@ import requests
 from bs4 import BeautifulSoup as bs
 import pandas as pd
 
-from abstracts import RequestCollectr, NoRecords
+from abstracts import RequestCollector, NoRecords
 from definitions import TEST_PERSON
 
 BASE_URL = 'https://radaris.com/'
 
 
-class Radaris(RequestCollectr):
+class Radaris(RequestCollector):
 
     def __init__(self, person, **kwargs):
 

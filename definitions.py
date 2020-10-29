@@ -6,7 +6,9 @@ TEST_DIR = os.path.join(ROOT_DIR, 'tests')
 FILES_DIR = os.path.join(ROOT_DIR, 'files')
 OUTPUT_DIR = os.path.join(FILES_DIR, 'output')
 NAMES_DIR = os.path.join(FILES_DIR, 'names.csv')
+
 PEOPLE = pd.read_csv(NAMES_DIR, index_col=0)
+
 SCROLL_PAUSE_TIME = 1.5
 with open(os.path.join(FILES_DIR, 'email.txt')) as f:
     EMAIL = f.readlines()[0].strip()

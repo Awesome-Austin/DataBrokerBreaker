@@ -8,14 +8,14 @@ from selenium.webdriver import Chrome as Driver
 from requests.exceptions import HTTPError
 from bs4 import BeautifulSoup as bs
 
-from abstracts.Collectr.errors import CollectrErrors, NoRecords, NoSuchMethod, SiteSchemaChange
+from abstracts.Collector.errors import CollectrErrors, NoRecords, NoSuchMethod, SiteSchemaChange
 
 from definitions import OUTPUT_DIR, STATES
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s -  %(levelname)s -  %(message)s')
 
 
-class AbstractCollectr:
+class AbstractCollector:
     """Bottom Level Collectr Class"""
 
     def __init__(self, person, base_url, **kwargs):
@@ -50,6 +50,7 @@ class AbstractCollectr:
             self.save_csv()
 
     def _raise_site_schema_change(self):
+        """Raises an error notifing the user that the site schema changed and the source code may need update."""
         raise SiteSchemaChange(f"{self.site} has changed it schema. An update to the source code may be required.")
 
     def _add_relative(self, relative):
@@ -57,7 +58,6 @@ class AbstractCollectr:
         takes a series, prompts user for missing data, and appends to the current Dataframe of known relatives
 
         :param relative: Pandas.Series
-        :return: None
         """
         if relative.get(key='state', default='') == '':
             relative['state'] = input('\t\tPlease enter state: (optional) ').strip().title()
@@ -77,11 +77,14 @@ class AbstractCollectr:
 
     def matching_relatives(self, people=None):
         """
-        Cleans the relatedTo field, asks user if the relative should be added to the list of relatives, and adds to list.
+        Cleans the 'relatedTo' field.
+        Asks user if the relative should be added to the list of relatives.
+        Checks if relative is already int 'people' DataFrame.
+        Adds relative to DataFrame of relatives.
 
-        :param people: Dataframe of all the people being collected.
-        :return Boolean: Next step is back where this method was called; should have code that adds the self.relatives
-            to the People Dataframe.
+        :param  people : DataFrame of all the people being collected.
+        :return Boolean: Next step is back where this method was called where it should have code that adds the
+                         self.relatives object to the People DataFrame.
         """
         if not self.person.check_family:
             return False
@@ -127,21 +130,26 @@ class AbstractCollectr:
         return True
 
     def save_csv(self):
-        """Checks if save_dir exists, creates it if it doesn't exist, and saves a csv file in directory"""
+        """
+        Checks if self.save_dir exists, creates it if it doesn't exist.
+        Saves a csv file in directory save_dir.
+
+        :return Boolean:
+        """
         if not path.exists(self.save_dir):
             makedirs(self.save_dir)
         file_name = f'{self.site}.csv'
 
         self.data_from_website.to_csv(path.join(self.save_dir, file_name))
+        return True
 
     def download_file(self, url, output_file_name):
         """
         Attempts to download file to the output directory.
 
-        :param url: str
-            The URL for the file being downloaded
-        :param output_file_name: str
-        :return: boolean
+        :param url             : The URL for the file being downloaded.
+        :param output_file_name: Where the file will be placed within the filesystem.
+        :return                : boolean
         """
 
         output_file_dir = path.join(self.save_dir, self.site)
@@ -173,9 +181,9 @@ class AbstractCollectr:
         """
         Loops through all website records and checks if the name in the record matches the search criteria.
         If the record doesn't reasonably match it will ask the user if the record should be included in the data
-        output.
+            output.
 
-        :return: boolean
+        :return Boolean:
         """
 
         if len(self.data_from_website.index) == 0:
@@ -267,24 +275,24 @@ class AbstractCollectr:
         raise NoSuchMethod(f'"{self.site}" does not have function "get_data"')
 
 
-class RequestCollectr(AbstractCollectr):
+class RequestCollector(AbstractCollector):
     """AbstracCollectr SubClass that uses Request and BeautifySoup to collect data from site."""
     def __init__(self, person, base_url, **kwargs):
-        super(RequestCollectr, self).__init__(person, base_url, **kwargs)
+        super(RequestCollector, self).__init__(person, base_url, **kwargs)
         self.soup = None
 
     def __enter__(self):
-        super(RequestCollectr, self).__enter__()
+        super(RequestCollector, self).__enter__()
         self.soup = self.get_soup()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        super(RequestCollectr, self).__exit__(exc_type, exc_val, exc_tb)
+        super(RequestCollector, self).__exit__(exc_type, exc_val, exc_tb)
 
     def get_soup(self):
         """
-        use the request module to get the site code and then runs it through BeautifySoup html parser.
+        Use the request module to get the site code and then runs it through BeautifySoup html parser.
 
-        :return: BeautifySoup for site.
+        :return BeautifySoup:
         """
         with requests.get(self.url, headers={'User-Agent': 'Mozilla/5.0'}) as request:
             try:
@@ -294,19 +302,18 @@ class RequestCollectr(AbstractCollectr):
                     raise NoRecords(e.args[0])
                 else:
                     raise e
-            a = bs(request.text, 'html.parser')
             return bs(request.text, 'html.parser')
 
 
-class SeleniumCollectr(AbstractCollectr):
+class SeleniumCollector(AbstractCollector):
     def __init__(self, person, base_url, **kwargs):
-        super(SeleniumCollectr, self).__init__(person, base_url, **kwargs)
-
-    def __enter__(self):
-        super(SeleniumCollectr, self).__enter__()
+        super(SeleniumCollector, self).__init__(person, base_url, **kwargs)
         self.driver = Driver
 
+    def __enter__(self):
+        super(SeleniumCollector, self).__enter__()
+
     def __exit__(self, exc_type, exc_val, exc_tb):
-        super(SeleniumCollectr, self).__exit__(exc_type, exc_val, exc_tb)
+        super(SeleniumCollector, self).__exit__(exc_type, exc_val, exc_tb)
 
 
