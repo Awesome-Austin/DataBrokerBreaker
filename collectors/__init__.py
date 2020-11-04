@@ -1,7 +1,7 @@
-from collectr.spokeo import Spokeo
-from collectr.mylife import MyLife
+from collectors.spokeo import Spokeo
+from collectors.mylife import MyLife
 
-COLLECTRS = (
+COLLECTORS = (
     Spokeo,
     MyLife,
 )

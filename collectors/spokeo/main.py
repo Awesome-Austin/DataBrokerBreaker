@@ -4,7 +4,6 @@ from urllib.parse import urljoin
 import logging
 
 import pandas as pd
-from pandas.io.json import json_normalize
 
 from definitions import STATES, TEST_PERSON
 from abstracts import RequestCollector, NoRecords
@@ -22,9 +21,11 @@ class Spokeo(RequestCollector):
             structure will be required.
     """
     def __init__(self, person, **kwargs):
-        """:param person: Pandas.Series representing an individual"""
+        """
+        :param person: Pandas.Series representing an individual
+        """
         super(Spokeo, self).__init__(person, BASE_URL, **kwargs)
-        # Converts State Abbriviation to full state name, as Spokeo requires.
+        # Converts State Abbriviation to full state name, as Spokeo requires for their Search URL.
         if self.person.state.upper() in STATES.keys():
             self.person.state = STATES[self.person.state.upper()].title()
 
@@ -106,10 +107,8 @@ class Spokeo(RequestCollector):
 
 if __name__ == '__main__':
 
-    # with Spokeo(TEST_PERSON, test=True) as s:
-    #     s.validate_data()
-    #     if s.matching_relatives():
-    #         relatives = s.relatives
-    #         pass
-    #     print()
-    help(Spokeo)
+    with Spokeo(TEST_PERSON, test=True) as s:
+        s.validate_data()
+        if s.matching_relatives():
+            relatives = s.relatives
+            pass

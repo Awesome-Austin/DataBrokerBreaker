@@ -10,13 +10,13 @@ from bs4 import BeautifulSoup as bs
 
 from abstracts.Collector.errors import CollectrErrors, NoRecords, NoSuchMethod, SiteSchemaChange
 
-from definitions import OUTPUT_DIR, STATES
+from definitions import OUTPUT_DIR, STATES, CHROME_DRIVER_DIR as DRIVER_DIR
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s -  %(levelname)s -  %(message)s')
 
 
 class AbstractCollector:
-    """Bottom Level Collectr Class"""
+    """Base Level Collectr Class"""
 
     def __init__(self, person, base_url, **kwargs):
         """
@@ -193,7 +193,7 @@ class AbstractCollector:
 
         print(f'\t** Validate Records ({original_count}) **')
         for i, website_record in enumerate(self.data_from_website.iterrows()):
-            spokeo_id, website_record = website_record
+            site_id, website_record = website_record
             top_city_index = website_record.top_city_states_best_match_index
 
             if top_city_index is None:
@@ -201,30 +201,31 @@ class AbstractCollector:
 
             website_main_city = website_record.top_city_states[top_city_index]
 
-            try:
-                same_state = (
-                        (website_main_city.get('state', '').lower() == self.person.state.lower()) or
-                        (website_main_city.get('state', '').lower() == STATES.get(self.person.state.upper(), '').lower()) or
-                        (STATES.get(website_main_city.get('state', '').upper(), '').lower() == self.person.state.lower()))
-                same_city = website_main_city.get('city', '').lower() == self.person.city.lower()
-                same_city_state = same_city and same_state
+            # try:
+            same_state = [
+                website_main_city.get('state', '').lower() == self.person.get('state', '').lower(),
+                website_main_city.get('state', '').lower() == STATES.get(self.person.get('state', '').upper(), '').lower(),
+                STATES.get(website_main_city.get('state', '').upper(), '').lower() == self.person.get('state', '').lower(),
+            ]
+            same_city = website_main_city.get('city', '').lower() == self.person.city.lower()
+            same_city_state = same_city and any(same_state)
 
-            except AttributeError:
-                same_city_state = False
+            # except AttributeError:
+            #     same_city_state = False
 
             website_main_name = website_record['main_name']
 
             same_first = self.person.first_name.lower() == website_main_name['first_name'].lower()
             same_last = self.person.last_name.lower() == website_main_name['last_name'].lower()
 
-            try:
-                middle_as_first = self.person.middle_name.lower() == website_main_name['first_name'].lower()
-                middle_as_last = self.person.middle_name.lower() == website_main_name['last_name'].lower()
-            except AttributeError:
-                middle_as_first = False
-                middle_as_last = False
+            # try:
+            middle_as_first = self.person.get('middle_name', '') == website_main_name['first_name'].lower()
+            middle_as_last  = self.person.get('middle_name', '') == website_main_name['last_name'].lower()
+            # except AttributeError:
+            #     middle_as_first = False
+            #     middle_as_last = False
 
-            aka = '; '.join(website_record.addl_full_names)
+            aka = '; '.join(website_record.get('addl_full_names', []))
 
             """
             Check if the record is in the same city and has the same first name and last name as the search.
@@ -233,7 +234,7 @@ class AbstractCollector:
             """
 
             if not same_city_state or not ((same_first or middle_as_first) and (same_last or middle_as_last)):
-                msg = "{:{ocl}d}) Do you want to keep {full_name} of {city}, {state}?{aka}".format(
+                msg = "{:{ocl}d}) Do you want to keep {full_name} of {city}, {state}?{aka} [y|n]".format(
                     i + 1,
                     ocl=len(str(original_count)),
                     full_name=website_record.full_name,
@@ -242,9 +243,9 @@ class AbstractCollector:
                     aka=f' (aka {aka})' if len(aka) > 0 else '')
                 try:
                     if input(f'\t{msg}\t').lower()[0] != 'y':
-                        self.data_from_website.drop(index=spokeo_id, inplace=True)
+                        self.data_from_website.drop(index=site_id, inplace=True)
                 except IndexError:
-                    self.data_from_website.drop(index=spokeo_id, inplace=True)
+                    self.data_from_website.drop(index=site_id, inplace=True)
 
             else:
                 # The extra spacing here is so that full_name here lines up with full_name
@@ -262,21 +263,12 @@ class AbstractCollector:
         return True
 
     def get_data(self):
-        """
-            Series fields required for data passed through one of the collectrs:
-                first_name    -> str: 'Bruce"
-                last_name     -> str: 'Wayne'
-                full_name     -> str: 'Bruce Wayne'
-                city          -> list if dicts:   [{city:'Gotham', state:'NY'}]
-                aka           -> list of full names as str:     ['Dark Knight']
-                relatedTo     -> list of full names as str:     ['Alfred Pennyworth', 'Damian Wayne']
-            DataFrame can have more than this, but these are required for validate_data() and check_relatives()
-            """
+        """This method should be overridden by all subclasses."""
         raise NoSuchMethod(f'"{self.site}" does not have function "get_data"')
 
 
 class RequestCollector(AbstractCollector):
-    """AbstracCollectr SubClass that uses Request and BeautifySoup to collect data from site."""
+    """AbstractCollectr SubClass that uses Request and BeautifySoup to collect data from site."""
     def __init__(self, person, base_url, **kwargs):
         super(RequestCollector, self).__init__(person, base_url, **kwargs)
         self.soup = None
@@ -306,7 +298,20 @@ class RequestCollector(AbstractCollector):
 
 
 class SeleniumCollector(AbstractCollector):
+    """
+    Collector Class for DataBrokers that use Javascript, or don't use JSON.
+    IF the Site uses Javascript to load data after the page has loaded then the 'request' module will not work to pull
+        the data off the site. This class will use a webbrowser (Firefox or Chrome). The browser choice is selected in
+        the header data of this module.
+    """
+
+    DRIVER_DIR = DRIVER_DIR
+
     def __init__(self, person, base_url, **kwargs):
+        """
+        :param person: Pandas.Series representing a person
+        :param base_url: str for the base url for the Data Broker being scraped. ex: www.spokeo.com; www.whitepages.com
+        """
         super(SeleniumCollector, self).__init__(person, base_url, **kwargs)
         self.driver = Driver
 
