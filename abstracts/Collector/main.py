@@ -8,7 +8,7 @@ from selenium.webdriver import Chrome as Driver
 from requests.exceptions import HTTPError
 from bs4 import BeautifulSoup as bs
 
-from abstracts.Collector.errors import CollectrErrors, NoRecords, NoSuchMethod, SiteSchemaChange
+from abstracts.Collector.errors import NoRecords, NoSuchMethod, SiteSchemaChange
 
 from definitions import OUTPUT_DIR, STATES, CHROME_DRIVER_DIR as DRIVER_DIR
 
@@ -35,9 +35,9 @@ class AbstractCollector:
         for k, v in kwargs.items():
             self.__setattr__(k, v)
 
-        self.save_dir = path.join(OUTPUT_DIR, '{test}{first_name}_{last_name}'.format(
-            first_name=self.person.first_name,
-            last_name=self.person.last_name,
+        self.save_dir = path.join(OUTPUT_DIR, '{test}{givenName}_{familyName}'.format(
+            givenName=self.person.givenName,
+            familyName=self.person.familyName,
             test='__test__' if self.test else ''
         ))
 
@@ -59,23 +59,25 @@ class AbstractCollector:
 
         :param relative: Pandas.Series
         """
-        if relative.get(key='state', default='') == '':
-            relative['state'] = input('\t\tPlease enter state: (optional) ').strip().title()
+        # Check addressRegion (state)
+        if relative.get(key='addressRegion', default='') == '':
+            relative['addressRegion'] = input('\t\tPlease enter state: (optional) ').strip().title()
 
+        # Check addressLocality (city)
         if relative.get(key='city', default='') == '':
             relative['city'] = input('\t\tPlease enter City: (optional) ').strip().title()
 
-        if relative.get(key='middle_name', default='') == '':
-            relative['middle_name'] = input('\t\tPlease enter middle name: (optional) ').strip().title()
+        if relative.get(key='middleName', default='') == '':
+            relative['middleName'] = input('\t\tPlease enter middle name: (optional) ').strip().title()
 
         try:
-            relative['check_family'] = bool(input('\t\tCheck relatives?: (optional) [y/n] ').lower()[0] == 'y')
+            relative['checkRelatives'] = bool(input('\t\tCheck relatives?: (optional) [y/n] ').lower()[0] == 'y')
         except IndexError:
-            relative['check_family'] = False
+            relative['checkRelatives'] = False
 
         self.relatives = self.relatives.append(relative, ignore_index=True)
 
-    def matching_relatives(self, people=None):
+    def check_relatives(self, people=None):
         """
         Cleans the 'relatedTo' field.
         Asks user if the relative should be added to the list of relatives.
@@ -86,40 +88,44 @@ class AbstractCollector:
         :return Boolean: Next step is back where this method was called where it should have code that adds the
                          self.relatives object to the People DataFrame.
         """
-        if not self.person.check_family:
+        if not self.person.get('checkRelatives', False):
             return False
 
-        try:
-            relatives = pd.DataFrame([n for d in self.data_from_website['relatedTo'] for n in d])
-            relatives['first_name'] = relatives['name'].str.title().str.split().str[0]
-            relatives['last_name'] = relatives['name'].str.title().str.split().str[-1]
-            relatives['middle_name'] = relatives['name'].str.title().str.split().str[1:-1]
-        except KeyError:
-            return False
+        # try:
+        relatives = pd.DataFrame([n for d in self.data_from_website['relatedTo'] for n in d])
+        relatives['givenName'] = relatives['name'].str.title().str.split().str[0]
+        relatives['familyName'] = relatives['name'].str.title().str.split().str[-1]
+        relatives['middleName'] = relatives['name'].str.title().str.split().str[1:-1]
+        # except KeyError:
+        #     return False
 
         if len(relatives.index) == 0:
             return False
 
         # Filter out relatives that are already in the people DataFrame
         if people is not None:
-            relatives = relatives[~((relatives.first_name.isin(people.first_name)) & (relatives.last_name.isin(people.last_name)))]
+            relatives = relatives[
+                ~((relatives.givenName.isin(people.givenName)) & (relatives.familyName.isin(people.familyName)))
+            ]
 
         if len(relatives.index) == 0:
             return False
 
-        orc = len(relatives)
+        starting_count = len(relatives)
 
-        print(f'\t** Check Relatives ({orc}) **')
+        print(f'\t** Check Relatives ({starting_count}) **')
         for i, possible_relative in enumerate(relatives.iterrows()):
             row_index, possible_relative = possible_relative
+            # try:
+            msg = '{:{orc}d}) Would you like to add {givenName}{middleName} {familyName}? [y/n] '.format(
+                i + 1,
+                orc=len(str(starting_count)),
+                givenName=possible_relative.get('givenName', ''),
+                middleName=f" {' '.join(possible_relative.get('middleName', ''))}" if (
+                        len(possible_relative.get('middleName', '')) > 0) else '',
+                familyName=possible_relative.get('familyName', '')
+            )
             try:
-                msg = '{:{orc}d}) Would you like to add {first_name}{middle_name} {last_name}? [y/n] '.format(
-                    i + 1,
-                    orc=len(str(orc)),
-                    first_name=possible_relative.first_name,
-                    middle_name=' ' + ' '.join(possible_relative.middle_name) if len(possible_relative.middle_name) > 0 else '',
-                    last_name=possible_relative.last_name
-                )
                 if input(f'\t{msg}?\t').lower()[0] == 'y':
                     self._add_relative(possible_relative)
 
@@ -177,6 +183,61 @@ class AbstractCollector:
                 f.write(block)
         return True
 
+    @staticmethod
+    def _site_record_matches_person(person, site_record):
+        """
+        Check if the website record is reasonably close to the searched person.
+            * Check if the site Region (State) is the same as the person's Region.
+            * Check if the Locality (City) is the same as the person's Locality.
+            * Check if the record is in the same city and has the same first name and last name as the search.
+                * Sometimes the data brokers will have the middle name listed as the first name or the last name, so
+                  we need to control for that as well.
+
+        :param site_record: Pandas.Series representing the site record
+        :return Boolean:
+        """
+
+        # Get the most recent address on the site
+        site_address = site_record.get('homeLocation')[site_record.get('top_city_states_best_match_index', 0)]
+        site_address = site_address['address']
+
+        # Start with the Region (state)
+        site_region = site_address.get('addressRegion', '').lower()
+        person_region = person.get('addressRegion', '').lower()
+        same_region = any([
+            site_region == person_region,
+            site_region == STATES.get(person_region.upper(), '').lower(),
+            STATES.get(site_region.upper(), '').lower() == person_region,
+        ])
+
+        # Continue with the Locality (city)
+        site_locality = site_address.get('addressLocality', '').lower()
+        person_locality = person.get('addressLocality', '').lower()
+        same_city = site_locality == person_locality
+
+        # Check if the givenName (First Name) and familyName (last name) match.
+        site_given  = site_record.get('givenName',  '').lower()
+        site_family = site_record.get('familyName', '').lower()
+
+        # Check if the names are close.
+        person_given  = person.get('givenName',  '').lower()
+        person_middle = person.get('middleName', '').lower()
+        person_family = person.get('familyName', '').lower()
+
+        same_first = (person_given  == site_given)
+        same_last  = (person_family == site_family)
+
+        middle_as_first = (person_middle == site_given)
+        middle_as_last  = (person_middle == site_family)
+
+        if not (same_city and same_region):
+            return False
+
+        if not ((same_first or middle_as_first) and (same_last or middle_as_last)):
+            return False
+
+        return True
+
     def validate_data(self):
         """
         Loops through all website records and checks if the name in the record matches the search criteria.
@@ -192,55 +253,57 @@ class AbstractCollector:
         original_count = len(self.data_from_website.index)
 
         print(f'\t** Validate Records ({original_count}) **')
-        for i, website_record in enumerate(self.data_from_website.iterrows()):
-            site_id, website_record = website_record
-            top_city_index = website_record.top_city_states_best_match_index
+        for i, site_record in enumerate(self.data_from_website.iterrows()):
+            site_id, site_record = site_record
 
-            if top_city_index is None:
-                top_city_index = 0
+            # """
+            # Check if the website record is reasonably close to the searched person.
+            #     * Check if the site Region (State) is the same as the persons Region
+            #     * Check if the locality is the
+            # """
+            # # Start with the Region (state)
+            # site_region = site_address.get('addressRegion', '').lower()
+            # person_region = self.person.get('addressRegion', '').lower()
+            # same_region = any([
+            #     site_region == person_region,
+            #     site_region == STATES.get(person_region.upper(), '').lower(),
+            #     STATES.get(site_region.upper(), '').lower() == person_region,
+            # ])
+            #
+            # # Continue with the Locality (city)
+            # site_locality = site_address.get('addressLocality', '').lower()
+            # person_locality = self.person.get('addressLocality', '').lower()
+            # same_city = site_locality == person_locality
+            #
+            #
+            # same_first = self.person.get('givenName', '').lower() == site_record.get('givenName', '').lower()
+            # same_last = self.person.get('familyName', '').lower() == site_record.get('familyName', '').lower()
+            #
+            # middle_as_first = self.person.get('middleName', '') == site_record.get('givenName', '').lower()
+            # middle_as_last  = self.person.get('middleName', '') == site_record.get('familyName', '').lower()
+            #
 
-            website_main_city = website_record.top_city_states[top_city_index]
+            #
+            # """
+            # Check if the record is in the same city and has the same first name and last name as the search.
+            # Sometimes the data brokers will have the middle name listed as the first name or the last name, so we
+            # need to control for that as well
+            # """
+            #
+            # if not (same_city and same_region) \
+            #         or not ((same_first or middle_as_first) and (same_last or middle_as_last)):
+            additional_names = '; '.join(site_record.get('additionalName', []))
+            site_address = site_record.get('homeLocation')[site_record.get('top_city_states_best_match_index', 0)]
+            site_address = site_address['address']
 
-            # try:
-            same_state = [
-                website_main_city.get('state', '').lower() == self.person.get('state', '').lower(),
-                website_main_city.get('state', '').lower() == STATES.get(self.person.get('state', '').upper(), '').lower(),
-                STATES.get(website_main_city.get('state', '').upper(), '').lower() == self.person.get('state', '').lower(),
-            ]
-            same_city = website_main_city.get('city', '').lower() == self.person.city.lower()
-            same_city_state = same_city and any(same_state)
-
-            # except AttributeError:
-            #     same_city_state = False
-
-            website_main_name = website_record['main_name']
-
-            same_first = self.person.first_name.lower() == website_main_name['first_name'].lower()
-            same_last = self.person.last_name.lower() == website_main_name['last_name'].lower()
-
-            # try:
-            middle_as_first = self.person.get('middle_name', '') == website_main_name['first_name'].lower()
-            middle_as_last  = self.person.get('middle_name', '') == website_main_name['last_name'].lower()
-            # except AttributeError:
-            #     middle_as_first = False
-            #     middle_as_last = False
-
-            aka = '; '.join(website_record.get('addl_full_names', []))
-
-            """
-            Check if the record is in the same city and has the same first name and last name as the search.
-            Sometimes the data brokers will have the middle name listed as the first name or the last name, so we
-            need to control for that as well
-            """
-
-            if not same_city_state or not ((same_first or middle_as_first) and (same_last or middle_as_last)):
-                msg = "{:{ocl}d}) Do you want to keep {full_name} of {city}, {state}?{aka} [y|n]".format(
+            if self._site_record_matches_person(self.person, site_record):
+                msg = "{:{ocl}d}) Do you want to keep {name_} of {city}, {state}?{aka} [y|n]".format(
                     i + 1,
                     ocl=len(str(original_count)),
-                    full_name=website_record.full_name,
-                    city=website_main_city['city'],
-                    state=website_main_city['state'],
-                    aka=f' (aka {aka})' if len(aka) > 0 else '')
+                    name_=site_record.get("name"),
+                    city=site_address['addressLocality'],
+                    state=site_address['addressRegion'],
+                    aka=f' (aka {additional_names})' if len(additional_names) > 0 else '')
                 try:
                     if input(f'\t{msg}\t').lower()[0] != 'y':
                         self.data_from_website.drop(index=site_id, inplace=True)
@@ -248,14 +311,14 @@ class AbstractCollector:
                     self.data_from_website.drop(index=site_id, inplace=True)
 
             else:
-                # The extra spacing here is so that full_name here lines up with full_name
-                msg = "{:{ocl}d})                kept {full_name} of {city}, {state}.{aka}".format(
+                # The extra spacing here is so that name_ here lines up with name_
+                msg = "{:{ocl}d})                kept {name_} of {city}, {state}.{aka}".format(
                     i + 1,
                     ocl=len(str(original_count)),
-                    full_name=website_record.full_name,
-                    city=website_main_city['city'],
-                    state=website_main_city['state'],
-                    aka=' (aka {aka})'.format(aka=aka) if len(aka) > 0 else '')
+                    name_=site_record.get("name"),
+                    city=site_address['addressLocality'],
+                    state=site_address['addressRegion'],
+                    aka=' (aka {aka})'.format(aka=additional_names) if len(additional_names) > 0 else '')
                 print(f'\t{msg}')
 
         print('\t** {count} record{s} found **\n'.format(count=len(self.data_from_website.index),

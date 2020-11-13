@@ -50,7 +50,7 @@ class Radaris(RequestCollector):
                 'first_name': result.find(itemprop='givenName').text.strip(),
                 'middle_name': result.find(itemprop='additionalName').text.strip(),
                 'last_name': result.find(itemprop='familyName').text.strip(),
-                'full_name': result.find(itemprop='name').text.strip(),
+                'name_': result.find(itemprop='name').text.strip(),
                 'age':  result.find(class_='age').text.replace('age:', '').strip(),
                 'city': {
                     'city': result.find(itemprop='AddressLocality').text.strip(),
@@ -72,4 +72,4 @@ class Radaris(RequestCollector):
 if __name__ == '__main__':
     with Radaris(TEST_PERSON, test=True) as rad:
         rad.validate_data()
-        rad.matching_relatives()
+        rad.check_relatives()

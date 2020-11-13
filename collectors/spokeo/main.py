@@ -25,17 +25,19 @@ class Spokeo(RequestCollector):
         :param person: Pandas.Series representing an individual
         """
         super(Spokeo, self).__init__(person, BASE_URL, **kwargs)
+
         # Converts State Abbriviation to full state name, as Spokeo requires for their Search URL.
-        if self.person.state.upper() in STATES.keys():
-            self.person.state = STATES[self.person.state.upper()].title()
+        person_region = self.person.get('addressRegion', '').upper()
+        if person_region in STATES.keys():
+            self.person['addressRegion'] = STATES[person_region].title()
 
         # Generate the url for the search
         self.url = urljoin(
             self.base_url,
             '/'.join([
-                f'{self.person.first_name} {self.person.last_name}',
-                f'{self.person.state}',
-                f"{self.person.city if type(self.person.city) == str else ''}"
+                f'{self.person.givenName} {self.person.familyName}',
+                f'{self.person.addressRegion}',
+                f"{self.person.addressLocality if type(self.person.addressLocality) == str else ''}"
             ])).replace(' ', '-')
 
     def __enter__(self):
@@ -109,6 +111,6 @@ if __name__ == '__main__':
 
     with Spokeo(TEST_PERSON, test=True) as s:
         s.validate_data()
-        if s.matching_relatives():
+        if s.check_relatives():
             relatives = s.relatives
             pass
