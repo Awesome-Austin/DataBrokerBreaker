@@ -34,7 +34,7 @@ def check_person(person, people=pd.DataFrame()):
             try:
                 with collectr(person) as c:
                     c.validate_data()
-                    c.matching_relatives(people)
+                    c.check_relatives(people)
                     relatives = c.relatives
                 break
             except Exception as e:

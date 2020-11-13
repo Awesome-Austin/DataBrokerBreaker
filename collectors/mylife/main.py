@@ -101,7 +101,7 @@ class MyLife(SeleniumCollector):
 
             return {
                 'id': hit_id,
-                'full_name': ' '.join(name),
+                'name_': ' '.join(name),
                 'main_name': {
                     'first_name': name[0],
                     'middle_name': ' '.join(name[1:-1]),
@@ -213,30 +213,21 @@ class MyLife(SeleniumCollector):
 
         soup = bs(txt, 'html.parser')
 
-
-        # logging.info(profile_data)
-        # logging.info(profile_data.string)
-        # profile_data = soup.find(type="application/ld+json").string
         profile_data = json.loads(soup.find(type="application/ld+json").string)
         profile_data['id'] = profile_data.pop('@id').split('/')[-1]
-        # profile_data.pop('@context')
-        # profile_data.pop('@type')
 
         about = profile_data.pop('about')
         for k, v in about.items():
             profile_data[k] = v
 
-        # print(profile_data)
-        full_name = profile_data.pop('name')
-        # profile_data['first_name'] = full_name.split()[0]
-        # profile_data['last_name'] = full_name.split()[-1]
-        profile_data['full_name'] = full_name
+        name_ = profile_data.pop('name')
+        profile_data['name'] = name_
 
-        full_name = full_name.split()
+        name_ = name_.split()
         profile_data['main_name'] = {
-            'givenName': full_name[0],
-            'middle_name': ' '.join(full_name[1:-1]),
-            'familyName':  full_name[-1],
+            'givenName': name_[0],
+            'middle_name': ' '.join(name_[1:-1]),
+            'familyName':  name_[-1],
         }
         profile_data['homeLocation'] = [profile_data.pop('address')]
         # profile_data['city'] = {
