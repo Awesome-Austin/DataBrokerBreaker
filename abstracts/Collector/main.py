@@ -198,8 +198,8 @@ class AbstractCollector:
         """
 
         # Get the most recent address on the site
-        site_address = site_record.get('homeLocation')[site_record.get('top_city_states_best_match_index', 0)]
-        site_address = site_address['address']
+        site_address = site_record['address'][0]
+        # site_address = site_address['address']
 
         # Start with the Region (state)
         site_region = site_address.get('addressRegion', '').lower()
@@ -256,47 +256,11 @@ class AbstractCollector:
         for i, site_record in enumerate(self.data_from_website.iterrows()):
             site_id, site_record = site_record
 
-            # """
-            # Check if the website record is reasonably close to the searched person.
-            #     * Check if the site Region (State) is the same as the persons Region
-            #     * Check if the locality is the
-            # """
-            # # Start with the Region (state)
-            # site_region = site_address.get('addressRegion', '').lower()
-            # person_region = self.person.get('addressRegion', '').lower()
-            # same_region = any([
-            #     site_region == person_region,
-            #     site_region == STATES.get(person_region.upper(), '').lower(),
-            #     STATES.get(site_region.upper(), '').lower() == person_region,
-            # ])
-            #
-            # # Continue with the Locality (city)
-            # site_locality = site_address.get('addressLocality', '').lower()
-            # person_locality = self.person.get('addressLocality', '').lower()
-            # same_city = site_locality == person_locality
-            #
-            #
-            # same_first = self.person.get('givenName', '').lower() == site_record.get('givenName', '').lower()
-            # same_last = self.person.get('familyName', '').lower() == site_record.get('familyName', '').lower()
-            #
-            # middle_as_first = self.person.get('middleName', '') == site_record.get('givenName', '').lower()
-            # middle_as_last  = self.person.get('middleName', '') == site_record.get('familyName', '').lower()
-            #
+            additional_names = site_record.get('additionalName', [])
+            additional_names = '; '.join(additional_names[:min([len(additional_names), 3])])
+            site_address = site_record['address'][0]
 
-            #
-            # """
-            # Check if the record is in the same city and has the same first name and last name as the search.
-            # Sometimes the data brokers will have the middle name listed as the first name or the last name, so we
-            # need to control for that as well
-            # """
-            #
-            # if not (same_city and same_region) \
-            #         or not ((same_first or middle_as_first) and (same_last or middle_as_last)):
-            additional_names = '; '.join(site_record.get('additionalName', []))
-            site_address = site_record.get('homeLocation')[site_record.get('top_city_states_best_match_index', 0)]
-            site_address = site_address['address']
-
-            if self._site_record_matches_person(self.person, site_record):
+            if not self._site_record_matches_person(self.person, site_record):
                 msg = "{:{ocl}d}) Do you want to keep {name_} of {city}, {state}?{aka} [y|n]".format(
                     i + 1,
                     ocl=len(str(original_count)),
