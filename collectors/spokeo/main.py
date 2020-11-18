@@ -4,6 +4,7 @@ from urllib.parse import urljoin
 import logging
 
 import pandas as pd
+from pandas import json_normalize
 
 from definitions import STATES, TEST_PERSON
 from abstracts import RequestCollector, NoRecords
@@ -26,7 +27,7 @@ class Spokeo(RequestCollector):
         """
         super(Spokeo, self).__init__(person, BASE_URL, **kwargs)
 
-        # Converts State Abbriviation to full state name, as Spokeo requires for their Search URL.
+        # Converts State Abbreviation to full state name, as Spokeo requires for their Search URL.
         person_region = self.person.get('addressRegion', '').upper()
         if person_region in STATES.keys():
             self.person['addressRegion'] = STATES[person_region].title()
@@ -41,6 +42,10 @@ class Spokeo(RequestCollector):
             ])).replace(' ', '-')
 
     def __enter__(self):
+        """
+        Enters the class and runs self.get_data()
+        :return: self
+        """
         try:
             super(Spokeo, self).__enter__()
             self.get_data()
@@ -75,7 +80,13 @@ class Spokeo(RequestCollector):
             # Create a field for Spokeo's internal record ID, needed to request record removal.
             search_results['id'] = search_results['url'].str.split('/').str[-1].str[1:]
 
-            # search_results.set_index('id', inplace=True)
+            search_results.drop(
+                inplace=True,
+                columns=[
+                    'relatedTo',
+                    'homeLocation',
+                ])
+
             return search_results
 
         def _hidden_search_results():
@@ -96,6 +107,53 @@ class Spokeo(RequestCollector):
                 return
 
             search_results = pd.DataFrame(search_results)
+
+            name_fields = json_normalize(search_results.pop('main_name'))
+            search_results['givenName'] = name_fields['first_name']
+            search_results['middleName'] = name_fields['middle_name']
+            search_results['familyName'] = name_fields['last_name']
+            search_results.rename(
+                inplace=True,
+                columns={
+                    'top_city_states': 'geo',
+                    'family_members': 'relatedTo',
+                })
+            search_results['address'] = None
+
+            for record_id, site_record in search_results.iterrows():
+                geos = json_normalize(site_record['geo'])
+
+                address = pd.DataFrame()
+                address['addressLocality'] = geos.pop('city')
+                address['addressRegion'] = geos.pop('state')
+                address['postalCode'] = geos.pop('postal_code')
+
+                geos['@type'] = 'GeoCoordinates'
+                geos = geos.to_dict('records')
+
+                # Move the most recent city to the top of the list
+                geos.insert(0, geos.pop(site_record['top_city_states_best_match_index']))
+                search_results.at[record_id, 'geo'] = geos
+
+                address['@type'] = 'PostalAddress'
+                address = address.to_dict('records')
+
+                # Move the most recent city to the top of the list
+                address.insert(0, address.pop(site_record['top_city_states_best_match_index']))
+                search_results.at[record_id, 'address'] = address
+
+            search_results.drop(
+                inplace=True,
+                columns=[
+                    'has_address',
+                    'has_phone',
+                    'has_email',
+                    'directory_page_id',
+                    'top_city_states_best_match_index',
+                    'addl_full_names',
+                    'full_name',
+                ])
+
             return search_results
 
         visible_search_results = _visible_search_results()
@@ -108,9 +166,9 @@ class Spokeo(RequestCollector):
 
 
 if __name__ == '__main__':
-
-    with Spokeo(TEST_PERSON, test=True) as s:
-        s.validate_data()
-        if s.check_relatives():
-            relatives = s.relatives
-            pass
+    # with Spokeo(TEST_PERSON, test=True) as s:
+    #     s.validate_data()
+    #     if s.check_relatives():
+    #         relatives = s.relatives
+    #         pass
+    help(Spokeo)
