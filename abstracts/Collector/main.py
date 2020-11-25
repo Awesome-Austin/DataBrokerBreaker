@@ -1,5 +1,6 @@
 from os import path, makedirs
 import logging
+from datetime import datetime
 
 import requests
 import pandas as pd
@@ -13,6 +14,11 @@ from abstracts.Collector.errors import NoRecords, NoSuchMethod, SiteSchemaChange
 from definitions import OUTPUT_DIR, STATES, CHROME_DRIVER_DIR as DRIVER_DIR
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s -  %(levelname)s -  %(message)s')
+
+# constants used for deciding if a search record matches the Person for who we are searching.
+MISMATCH_NAME = 0
+MISMATCH_LOCALITY = 1
+MATCH_PERSON = 3
 
 
 class AbstractCollector:
@@ -40,6 +46,7 @@ class AbstractCollector:
             familyName=self.person.familyName,
             test='__test__' if self.test else ''
         ))
+        self.save_dir = path.join(self.save_dir,  datetime.now().strftime("%Y-%m-%d"))
 
     def __enter__(self):
         print(f'-- {self.site} --')
@@ -194,12 +201,13 @@ class AbstractCollector:
                   we need to control for that as well.
 
         :param site_record: Pandas.Series representing the site record
-        :return Boolean:
+        :return Integer: Will be MISMATCH_NAME (0), MISMATCH_LOCALITY (1), or MATCH_PERSON (3)
         """
 
         # Get the most recent address on the site
-        site_address = site_record['address'][0]
-        # site_address = site_address['address']
+        site_address = site_record.get('address', dict())
+        if type(site_address) is list:
+            site_address = site_address[0]
 
         # Start with the Region (state)
         site_region = site_address.get('addressRegion', '').lower()
@@ -208,12 +216,12 @@ class AbstractCollector:
             site_region == person_region,
             site_region == STATES.get(person_region.upper(), '').lower(),
             STATES.get(site_region.upper(), '').lower() == person_region,
-        ])
+            ])
 
         # Continue with the Locality (city)
         site_locality = site_address.get('addressLocality', '').lower()
         person_locality = person.get('addressLocality', '').lower()
-        same_city = site_locality == person_locality
+        same_locality = site_locality == person_locality
 
         # Check if the givenName (First Name) and familyName (last name) match.
         site_given  = site_record.get('givenName',  '').lower()
@@ -230,13 +238,13 @@ class AbstractCollector:
         middle_as_first = (person_middle == site_given)
         middle_as_last  = (person_middle == site_family)
 
-        if not (same_city and same_region):
-            return False
-
         if not ((same_first or middle_as_first) and (same_last or middle_as_last)):
-            return False
+            return MISMATCH_NAME
 
-        return True
+        if not (same_locality and same_region):
+            return MISMATCH_LOCALITY
+
+        return MATCH_PERSON
 
     def validate_data(self):
         """
@@ -258,16 +266,27 @@ class AbstractCollector:
 
             additional_names = site_record.get('additionalName', [])
             additional_names = '; '.join(additional_names[:min([len(additional_names), 3])])
-            site_address = site_record['address'][0]
+            site_address = site_record.get('address', dict())
+            if type(site_address) is list:
+                site_address = site_address[0]
 
-            if not self._site_record_matches_person(self.person, site_record):
-                msg = "{:{ocl}d}) Do you want to keep {name_} of {city}, {state}?{aka} [y|n]".format(
-                    i + 1,
-                    ocl=len(str(original_count)),
-                    name_=site_record.get("name"),
-                    city=site_address['addressLocality'],
-                    state=site_address['addressRegion'],
-                    aka=f' (aka {additional_names})' if len(additional_names) > 0 else '')
+            site_record_check = self._site_record_matches_person(self.person, site_record)
+            msg = {
+                MISMATCH_NAME:     '{:{ocl}d})             skipped {name_} of {city}, {state}.{aka}',
+                MISMATCH_LOCALITY: '{:{ocl}d}) Do you want to keep {name_} of {city}, {state}?{aka} [y|n]',
+                MATCH_PERSON:      '{:{ocl}d})                kept {name_} of {city}, {state}.{aka}',
+            }[site_record_check]
+
+            msg = msg.format(
+                i + 1,
+                ocl=len(str(original_count)),
+                name_=site_record.get('name'),
+                city=site_address.get('addressLocality', 'Unknown City'),
+                state=site_address.get('addressRegion', ""),
+                aka=f' (aka {additional_names})' if len(additional_names) > 0 else ''
+            )
+
+            if site_record_check == MISMATCH_LOCALITY:
                 try:
                     if input(f'\t{msg}\t').lower()[0] != 'y':
                         self.data_from_website.drop(index=site_id, inplace=True)
@@ -275,15 +294,9 @@ class AbstractCollector:
                     self.data_from_website.drop(index=site_id, inplace=True)
 
             else:
-                # The extra spacing here is so that name_ here lines up with name_
-                msg = "{:{ocl}d})                kept {name_} of {city}, {state}.{aka}".format(
-                    i + 1,
-                    ocl=len(str(original_count)),
-                    name_=site_record.get("name"),
-                    city=site_address['addressLocality'],
-                    state=site_address['addressRegion'],
-                    aka=' (aka {aka})'.format(aka=additional_names) if len(additional_names) > 0 else '')
                 print(f'\t{msg}')
+                if site_record_check == MISMATCH_NAME:
+                    self.data_from_website.drop(index=site_id, inplace=True)
 
         print('\t** {count} record{s} found **\n'.format(count=len(self.data_from_website.index),
                                                          s='s' if len(self.data_from_website.index) != 1 else ''))
