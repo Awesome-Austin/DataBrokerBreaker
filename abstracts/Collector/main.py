@@ -18,7 +18,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s -  %(levelname)s -  
 # constants used for deciding if a search record matches the Person for who we are searching.
 MISMATCH_NAME = 0
 MISMATCH_LOCALITY = 1
-MATCH_PERSON = 3
+MATCH_PERSON = 2
 
 
 class AbstractCollector:
@@ -201,7 +201,7 @@ class AbstractCollector:
                   we need to control for that as well.
 
         :param site_record: Pandas.Series representing the site record
-        :return Integer: Will be MISMATCH_NAME (0), MISMATCH_LOCALITY (1), or MATCH_PERSON (3)
+        :return Integer: Will be MISMATCH_NAME (0), MISMATCH_LOCALITY (1), or MATCH_PERSON (2)
         """
 
         # Get the most recent address on the site
