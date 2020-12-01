@@ -8,7 +8,7 @@ OUTPUT_DIR = os.path.join(FILES_DIR, 'output')
 NAMES_DIR = os.path.join(FILES_DIR, 'names.csv')
 DRIVERS_DIR = os.path.join(ROOT_DIR, 'drivers', )
 
-PEOPLE = pd.read_csv(NAMES_DIR, index_col=0)
+PEOPLE = pd.read_csv(NAMES_DIR, index_col=0).fillna('')
 
 CHROME_DRIVER_DIR = os.path.join(DRIVERS_DIR, 'chromedriver.exe')
 # FIREFOX_DRIVER_DIR = os.path.join(DRIVERS_DIR, '')

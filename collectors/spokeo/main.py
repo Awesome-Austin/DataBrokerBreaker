@@ -121,6 +121,7 @@ class Spokeo(RequestCollector):
             search_results['address'] = None
 
             for record_id, site_record in search_results.iterrows():
+                # Update the address and geo coordinates to match schema.org
                 geos = json_normalize(site_record['geo'])
 
                 address = pd.DataFrame()
@@ -141,6 +142,10 @@ class Spokeo(RequestCollector):
                 # Move the most recent city to the top of the list
                 address.insert(0, address.pop(site_record['top_city_states_best_match_index']))
                 search_results.at[record_id, 'address'] = address
+
+                # Update 'relatedTo' to match schema.org
+                related_to = [{'name': relation} for relation in site_record.get('relatedTo', [])]
+                search_results.at[record_id, 'relatedTo'] = related_to
 
             search_results.drop(
                 inplace=True,

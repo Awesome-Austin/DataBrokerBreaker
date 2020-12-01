@@ -407,7 +407,9 @@ class MyLife(SeleniumCollector):
         self.data_from_website = cleaned_data_from_website
 
     def validate_data(self):
-        super(MyLife, self).validate_data()
+        if not super(MyLife, self).validate_data():
+            return
+
         self._gather_deep_data()
         for i, record in self.data_from_website.iterrows():
             for pic in record.get('pics', list()):
