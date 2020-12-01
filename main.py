@@ -1,45 +1,45 @@
 
 import pandas as pd
 
-from collectr import COLLECTRS
+from collectors import COLLECTORS
 from definitions import PEOPLE, NAMES_DIR
 
 
-def check_people(people):
-    """
+def collect_people_data(people: pd.DataFrame):
+    for person in people.iterrows():
+        person_id, person = person
+        people = collect_person_data(person, people, person_id)
+        # break
 
-    :param people:
-    :return:
-    """
-    i = 0
-    while i < len(people.index):
-        person = people.iloc[i]
-        people = check_person(person, people)
-        i += 1
-        print()
+    people.to_csv(NAMES_DIR)
+
     return people
 
 
-def check_person(person, people=pd.DataFrame()):
-    """
+def collect_person_data(person: pd.Series, people: pd.DataFrame = None, person_id=None):
+    if people is None:
+        people = pd.DataFrame({}, columns=[
+            'givenName',
+            'middleName',
+            'familyName',
+            'addressLocality',
+            'addressRegion',
+            'checkRelatives',
+            'none_relatives',
+        ])
 
-    :param person:
-    :param people:
-    :return:
-    """
-    print(f'== {person.first_name} {person.last_name} ==')
+    print(f'== {person.get("givenName", "___")} {person.get("familyName", "___")} ==')
 
-    for collectr in COLLECTRS:
-        while True:
-            try:
-                with collectr(person) as c:
-                    c.validate_data()
-                    c.check_relatives(people)
-                    relatives = c.relatives
-                break
-            except Exception as e:
-                raise e
+    for collector in COLLECTORS:
+        with collector(person) as c:
+            c.validate_data()
+            c.check_relatives(people)
+            relatives = c.relatives
+            if person_id is not None:
+                people.at[person_id] = c.person
+
         people = people.append(relatives, ignore_index=True, sort=False)
+        # break
     return people
 
 
@@ -54,45 +54,53 @@ def run_check(**kwargs):
                 return s
             print('Please make a valid entry')
 
-    first_name = kwargs.get('first_name')
-    if first_name is None:
-        first_name = _input('First Name')
-    if first_name is False:
-        return first_name
+    given_name = kwargs.get('givenName')
+    if given_name is None:
+        given_name = _input('First Name')
+    if given_name is False:
+        return False
 
-    last_name = kwargs.get('last_name')
-    if last_name is None:
-        last_name = _input('Last Name')
-    if last_name is False:
-        return last_name
+    middle_name = kwargs.get('middleName')
+    if middle_name is None:
+        middle_name = _input('Middle Name', required=False)
 
-    city = kwargs.get('city')
-    if city is None:
-        city = _input('City')
-    if city is False:
-        return city
+    family_name = kwargs.get('familyName')
+    if family_name is None:
+        family_name = _input('Last Name')
+    if family_name is False:
+        return False
 
-    state = kwargs.get('state')
-    if state is None:
-        state = _input('State')
-    if state is False:
-        return state
+    address_locality = kwargs.get('addressLocality')
+    if address_locality is None:
+        address_locality = _input('City')
+    if address_locality is False:
+        return False
 
-    check_person(pd.Series({
-        'first_name': first_name,
-        'middle_name': '',
-        'last_name': last_name,
-        'city': city,
-        'state': state,
-        'check_family':False
-    }))
+    address_region = kwargs.get('addressRegion')
+    if address_region is None:
+        address_region = _input('State')
+    if address_region is False:
+        return False
+
+    check_family = kwargs.get('checkRelatives', False)
+
+    person = pd.Series({
+        'givenName': given_name.title(),
+        'middleName': middle_name.title(),
+        'familyName': family_name.title(),
+        'addressLocality': address_locality.title(),
+        'addressRegion': address_region.title(),
+        'checkRelatives': check_family,
+    })
+
+    people = collect_person_data(person=person)
+    return True
 
 
 def main():
-    people = PEOPLE
-    people = check_people(people)
-    people.to_csv(NAMES_DIR)
+    people = collect_people_data(PEOPLE)
 
 
 if __name__ == '__main__':
     main()
+    # run_check()

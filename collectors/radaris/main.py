@@ -76,8 +76,8 @@ class Radaris(RequestCollector):
             addl_name = addl_name.text.split(":")[1].strip().split(', ') if addl_name is not None else ''
 
             related_to = result.find_all(itemprop='relatedTo')
-            related_to = [r.find(itemprop='name').text.split(',')[0] for r in related_to if
-                          r.find(itemprop='name') is not None]
+            related_to = [{'name': r.find(itemprop='name').text.split(',')[0]}
+                          for r in related_to if r.find(itemprop='name') is not None]
 
             url = urljoin(self.base_url, result.find(itemprop="url").get('href'))
 

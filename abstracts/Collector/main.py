@@ -1,6 +1,8 @@
 from os import path, makedirs
 import logging
+import json
 from datetime import datetime
+
 
 import requests
 import pandas as pd
@@ -68,11 +70,11 @@ class AbstractCollector:
         """
         # Check addressRegion (state)
         if relative.get(key='addressRegion', default='') == '':
-            relative['addressRegion'] = input('\t\tPlease enter state: (optional) ').strip().title()
+            relative['addressRegion'] = input('\t\tPlease enter State: (optional) ').strip().title()
 
         # Check addressLocality (city)
-        if relative.get(key='city', default='') == '':
-            relative['city'] = input('\t\tPlease enter City: (optional) ').strip().title()
+        if relative.get(key='addressLocality', default='') == '':
+            relative['addressLocality'] = input('\t\tPlease enter City: (optional) ').strip().title()
 
         if relative.get(key='middleName', default='') == '':
             relative['middleName'] = input('\t\tPlease enter middle name: (optional) ').strip().title()
@@ -81,6 +83,16 @@ class AbstractCollector:
             relative['checkRelatives'] = bool(input('\t\tCheck relatives?: (optional) [y/n] ').lower()[0] == 'y')
         except IndexError:
             relative['checkRelatives'] = False
+
+        relative['givenName'] = relative['givenName'].strip().title()
+        relative['familyName'] = relative['familyName'].strip().title()
+        relative['middleName'] = ''.join(relative['middleName']).strip().title()
+        relative['addressLocality'] = relative['addressLocality'].strip().title()
+        relative['addressRegion'] = relative['addressRegion'].strip().upper()
+
+        relative.drop(inplace=True, columns=[
+            'name',
+        ])
 
         self.relatives = self.relatives.append(relative, ignore_index=True)
 
@@ -98,30 +110,43 @@ class AbstractCollector:
         if not self.person.get('checkRelatives', False):
             return False
 
-        # try:
-        relatives = pd.DataFrame([n for d in self.data_from_website['relatedTo'] for n in d])
-        relatives['givenName'] = relatives['name'].str.title().str.split().str[0]
-        relatives['familyName'] = relatives['name'].str.title().str.split().str[-1]
-        relatives['middleName'] = relatives['name'].str.title().str.split().str[1:-1]
-        # except KeyError:
-        #     return False
-
-        if len(relatives.index) == 0:
+        possible_relatives = self.data_from_website.get('relatedTo', list())
+        possible_relatives = pd.DataFrame([n for d in possible_relatives for n in d])
+        if len(possible_relatives) == 0:
             return False
 
         # Filter out relatives that are already in the people DataFrame
+        # if self.person.get("non_relatives", None) is None:
+        #     self.person["non_relatives"] = list()
+
+        if len(self.person.get("non_relatives", '')) == 0:
+            self.person["non_relatives"] = list()
+
+        else:
+            if type(self.person["non_relatives"]) == str:
+                self.person["non_relatives"] = json.loads(self.person["non_relatives"].replace("'", '"'))
+            non_relatives = pd.DataFrame(self.person["non_relatives"])
+            possible_relatives = possible_relatives[~(possible_relatives.name.isin(non_relatives.name))]
+            if len(possible_relatives) == 0:
+                return False
+
+        split_name = possible_relatives['name'].str.title().str.split()
+        possible_relatives['givenName'] = split_name.str[0]
+        possible_relatives['familyName'] = split_name.str[-1]
+        possible_relatives['middleName'] = split_name.str[1:-1].str.join(' ')
+
         if people is not None:
-            relatives = relatives[
-                ~((relatives.givenName.isin(people.givenName)) & (relatives.familyName.isin(people.familyName)))
+            possible_relatives = possible_relatives[
+                ~((possible_relatives['givenName'].isin(people['givenName'])) & (possible_relatives['familyName'].isin(people['familyName'])))
             ]
 
-        if len(relatives.index) == 0:
+        if len(possible_relatives.index) == 0:
             return False
 
-        starting_count = len(relatives)
+        starting_count = len(possible_relatives)
 
         print(f'\t** Check Relatives ({starting_count}) **')
-        for i, possible_relative in enumerate(relatives.iterrows()):
+        for i, possible_relative in enumerate(possible_relatives.iterrows()):
             row_index, possible_relative = possible_relative
             # try:
             msg = '{:{orc}d}) Would you like to add {givenName}{middleName} {familyName}? [y/n] '.format(
@@ -132,14 +157,22 @@ class AbstractCollector:
                         len(possible_relative.get('middleName', '')) > 0) else '',
                 familyName=possible_relative.get('familyName', '')
             )
-            try:
-                if input(f'\t{msg}?\t').lower()[0] == 'y':
-                    self._add_relative(possible_relative)
 
+            try:
+                add_relative = input(f'\t{msg}?\t').lower()[0] == 'y'
             except IndexError:
-                pass
-        print('\t** {count} relative{s} found **\n'.format(count=len(self.relatives),
-                                                           s='s' if len(self.relatives) != 1 else ''))
+                add_relative = False
+
+            if add_relative:
+                self._add_relative(possible_relative)
+            else:
+                self.person['non_relatives'].append({'name': possible_relative['name']})
+
+        print('\t** {count} relative{s} found **\n'.format(
+            count=len(self.relatives),
+            s='s' if len(self.relatives) != 1 else '')
+        )
+
         return True
 
     def save_csv(self):
@@ -254,13 +287,11 @@ class AbstractCollector:
 
         :return Boolean:
         """
-
-        if len(self.data_from_website.index) == 0:
+        original_count = len(self.data_from_website.index)
+        print(f'\t** Validate Records ({original_count}) **')
+        if original_count == 0:
             return False
 
-        original_count = len(self.data_from_website.index)
-
-        print(f'\t** Validate Records ({original_count}) **')
         for i, site_record in enumerate(self.data_from_website.iterrows()):
             site_id, site_record = site_record
 
