@@ -9,8 +9,8 @@ from pandas import json_normalize
 from definitions import STATES, TEST_PERSON
 from abstracts import RequestCollector, NoRecords
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logging.disable(logging.CRITICAL)
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s -  %(levelname)s -  %(message)s')
+# logging.disable(logging.CRITICAL)
 
 BASE_URL = 'https://www.spokeo.com'
 
