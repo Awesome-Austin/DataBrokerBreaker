@@ -11,7 +11,7 @@ from selenium.webdriver import Chrome as Driver
 from requests.exceptions import HTTPError
 from bs4 import BeautifulSoup as bs
 
-from abstracts.Collector.errors import NoRecords, NoSuchMethod, SiteSchemaChange
+from collectors.errors import SiteSchemaChange, NoRecords
 
 from definitions import OUTPUT_DIR, STATES, CHROME_DRIVER_DIR as DRIVER_DIR
 
@@ -372,10 +372,6 @@ class AbstractCollector:
         print('\t** {count} record{s} found **\n'.format(count=len(self.data_from_website.index),
                                                          s='s' if len(self.data_from_website.index) != 1 else ''))
         return True
-
-    def get_data(self):
-        """This method should be overridden by all subclasses."""
-        raise NoSuchMethod(f'"{self.site}" does not have function "get_data"')
 
 
 class RequestCollector(AbstractCollector):
