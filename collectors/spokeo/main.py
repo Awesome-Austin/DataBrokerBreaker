@@ -7,7 +7,8 @@ import pandas as pd
 from pandas import json_normalize
 
 from definitions import STATES, TEST_PERSON
-from abstracts import RequestCollector, NoRecords
+from collectors import RequestCollector
+# from collectors.errors import NoRecords
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s -  %(levelname)s -  %(message)s')
 # logging.disable(logging.CRITICAL)

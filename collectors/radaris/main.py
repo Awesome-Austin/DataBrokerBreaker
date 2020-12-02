@@ -5,7 +5,7 @@ import requests
 from bs4 import BeautifulSoup as bs
 import pandas as pd
 
-from abstracts import RequestCollector, NoRecords
+from collectors import RequestCollector
 from definitions import TEST_PERSON
 
 
@@ -32,10 +32,7 @@ class Radaris(RequestCollector):
 
     def __enter__(self):
         super(Radaris, self).__enter__()
-        try:
-            self.get_data()
-        except NoRecords:
-            pass
+        self.get_data()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):

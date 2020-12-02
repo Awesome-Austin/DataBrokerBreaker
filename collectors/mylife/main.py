@@ -8,7 +8,7 @@ from selenium.common.exceptions import StaleElementReferenceException
 import pandas as pd
 
 from definitions import STATES, TEST_PERSON, SCROLL_PAUSE_TIME
-from abstracts import SeleniumCollector, NoRecords
+from collectors import SeleniumCollector
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 # logging.disable(logging.CRITICAL)
