@@ -9,7 +9,7 @@ from abstracts import RequestCollector, NoRecords
 from definitions import TEST_PERSON
 
 
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s -  %(levelname)s -  %(message)s')
 # logging.disable(logging.CRITICAL)
 
 BASE_URL = 'https://radaris.com/'

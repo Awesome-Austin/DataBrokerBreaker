@@ -403,6 +403,8 @@ class MyLife(SeleniumCollector):
             cleaned_data_from_website.append(self._deep_data(search_result.url))
 
         cleaned_data_from_website = pd.DataFrame(cleaned_data_from_website)
+        if len(cleaned_data_from_website) == 0:
+            cleaned_data_from_website['id'] = '0'
         cleaned_data_from_website.set_index('id', inplace=True)
         self.data_from_website = cleaned_data_from_website
 
@@ -425,3 +427,4 @@ if __name__ == '__main__':
     ml = MyLife(TEST_PERSON, test=True)
     dd = ml._deep_data('https://www.mylife.com/john-smith/e781501602096')
     print()
+
