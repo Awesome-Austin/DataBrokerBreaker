@@ -93,12 +93,12 @@ def run_check(**kwargs):
         'checkRelatives': check_family,
     })
 
-    people = collect_person_data(person=person)
+    collect_person_data(person=person)
     return True
 
 
 def main():
-    people = collect_people_data(PEOPLE)
+    collect_people_data(PEOPLE)
 
 
 if __name__ == '__main__':

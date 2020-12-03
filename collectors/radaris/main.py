@@ -15,7 +15,6 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s -  %(levelname)s - 
 BASE_URL = 'https://radaris.com/'
 
 
-
 class Radaris(RequestCollector):
 
     def __init__(self, person, **kwargs):
@@ -62,15 +61,15 @@ class Radaris(RequestCollector):
             try:
                 address['addressLocality'] = result.find(itemprop='AddressLocality').text.strip()
             except AttributeError as e:
-                pass
+                logging.debug(e)
 
             try:
                 address['addressRegion'] = result.find(itemprop='AddressRegion').text.strip()
             except AttributeError as e:
-                pass
+                logging.debug(e)
 
-            addl_name = result.find(class_='ka')
-            addl_name = addl_name.text.split(":")[1].strip().split(', ') if addl_name is not None else ''
+            aka = result.find(class_='ka')
+            aka = aka.text.split(":")[1].strip().split(', ') if aka is not None else ''
 
             related_to = result.find_all(itemprop='relatedTo')
             related_to = [{'name': r.find(itemprop='name').text.split(',')[0]}
@@ -88,7 +87,7 @@ class Radaris(RequestCollector):
                 'name': name_,
                 'age': age,
                 'address': address,
-                'additionalName': addl_name,
+                'additionalName': aka,
                 'relatedTo': related_to,
                 'url': url
             }
