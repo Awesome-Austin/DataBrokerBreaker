@@ -26,7 +26,7 @@ MATCH_PERSON = 3
 
 
 class AbstractCollector:
-    """Base Level Collectr Class"""
+    """Base Level Collector Class"""
 
     def __init__(self, person, base_url, **kwargs):
         """
@@ -61,7 +61,7 @@ class AbstractCollector:
             self.save_csv()
 
     def _raise_site_schema_change(self):
-        """Raises an error notifing the user that the site schema changed and the source code may need update."""
+        """Raises an error notifying the user that the site schema changed and the source code may need update."""
         raise SiteSchemaChange(f"{self.site} has changed it schema. An update to the source code may be required.")
 
     def _add_relative(self, relative):
@@ -283,7 +283,7 @@ class AbstractCollector:
 
         same_region_and_locality = all([same_locality, same_region])
 
-        person_akas = _name_perms(
+        person_aka = _name_perms(
             _first=self.person['givenName'].lower(),
             _middle=self.person['middleName'].lower(),
             _last=self.person['familyName'].lower()
@@ -291,15 +291,15 @@ class AbstractCollector:
 
         site_name = site_record['name'].lower()
         _site_name = site_name.split(' ')
-        site_akas = _name_perms(
+        site_aka = _name_perms(
             _first=_site_name[0],
             _middle=''.join(_site_name[1:-1]),
             _last=_site_name[-1]
         )
 
-        matches_aka = [aka in person_akas for aka in site_akas]
+        matches_aka = [aka in person_aka for aka in site_aka]
 
-        if site_name not in person_akas:
+        if site_name not in person_aka:
             if not any(matches_aka):
                 logging.debug(f'MISMATCH_NAME: {site_name}')
                 return MISMATCH_NAME
@@ -372,7 +372,7 @@ class AbstractCollector:
 
 
 class RequestCollector(AbstractCollector):
-    """AbstractCollectr SubClass that uses Request and BeautifySoup to collect data from site."""
+    """AbstractCollector SubClass that uses Request and BeautifySoup to collect data from site."""
     def __init__(self, person, base_url, **kwargs):
         super(RequestCollector, self).__init__(person, base_url, **kwargs)
         self.soup = None

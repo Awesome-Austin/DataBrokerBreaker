@@ -93,19 +93,26 @@ class MyLife(SeleniumCollector):
             address = [
                 {
                     '@type': 'PostalAddress',
-                    'addressLocality': address_locality.title(),
-                    'addressRegion': address_region
-                } for address_locality, address_region in [a.split(', ') for a in address]]
+                    'addressLocality': locality.title(),
+                    'addressRegion': region
+                } for locality, region in [a.split(', ') for a in address]]
 
             work_location = {'@type': 'Place'}
             try:
-                work_location['name'] = search_hit.find(class_='hit-work').find(class_='hit-values').get_text().title()
+                work_location['name'] = search_hit\
+                    .find(class_='hit-work')\
+                    .find(class_='hit-values')\
+                    .get_text()\
+                    .title()
             except AttributeError:
                 work_location['name'] = ''
 
             alumni_of = {'@type': 'EducationalOrganization'}
             try:
-                alumni_of['name'] = search_hit.find(class_='hit-high-school').find(class_='hit-values').get_text().title()
+                alumni_of['name'] = search_hit\
+                    .find(class_='hit-high-school')\
+                    .find(class_='hit-values')\
+                    .get_text().title()
             except AttributeError:
                 pass
 
@@ -128,7 +135,7 @@ class MyLife(SeleniumCollector):
                 press the option if found. Returns Boolean for found status
 
             :param search_str: str of the desired option.
-            :param options: list of WebElements from Beautify Soup that represents all of the avaiable options.
+            :param options: list of WebElements from Beautify Soup that represents all of the available options.
             :return:
             """
             search_str = search_str.upper()
@@ -216,7 +223,7 @@ class MyLife(SeleniumCollector):
         """
         def _nested_persons(persons):
             _persons = list()
-            for person_ in _persons:
+            for person_ in persons:
                 person_ = [r.text.split(', ') for r in person_.find_all(class_='default-text')]
                 person = {'name': person_[0][0].title()}
                 if len(person_[0]) == 2:
@@ -351,7 +358,11 @@ class MyLife(SeleniumCollector):
                     continue
 
                 automobile['@type'] = 'Product'
-                automobile['model'] = ' '.join([automobile.pop('year'), automobile.pop('make'), automobile.pop('model')])
+                automobile['model'] = ' '.join([
+                    automobile.pop('year'),
+                    automobile.pop('make'),
+                    automobile.pop('model')
+                ])
                 owns.append(automobile)
 
             if len(owns) > 0:
@@ -400,4 +411,3 @@ if __name__ == '__main__':
     ml = MyLife(TEST_PERSON, test=True)
     dd = ml._deep_data('https://www.mylife.com/john-smith/e781501602096')
     print()
-

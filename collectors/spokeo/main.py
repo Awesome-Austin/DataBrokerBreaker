@@ -6,9 +6,9 @@ import logging
 import pandas as pd
 from pandas import json_normalize
 
-from definitions import STATES, TEST_PERSON
+from definitions import STATES
 from collectors import RequestCollector
-# from collectors.errors import NoRecords
+from collectors.errors import NoRecords
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s -  %(levelname)s -  %(message)s')
 # logging.disable(logging.CRITICAL)
@@ -108,8 +108,8 @@ class Spokeo(RequestCollector):
                 return
 
             search_results = pd.DataFrame(search_results)
-
-            name_fields = json_normalize(search_results.pop('main_name'))
+            name_fields = search_results.pop('main_name')
+            name_fields = json_normalize(name_fields)
             search_results['givenName'] = name_fields['first_name']
             search_results['middleName'] = name_fields['middle_name']
             search_results['familyName'] = name_fields['last_name']
@@ -172,6 +172,7 @@ class Spokeo(RequestCollector):
 
 
 if __name__ == '__main__':
+    # from definitions import TEST_PERSON
     # with Spokeo(TEST_PERSON, test=True) as s:
     #     s.validate_data()
     #     if s.check_relatives():
