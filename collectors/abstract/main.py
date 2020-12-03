@@ -135,7 +135,8 @@ class AbstractCollector:
 
         if people is not None:
             possible_relatives = possible_relatives[
-                ~((possible_relatives['givenName'].isin(people['givenName'])) & (possible_relatives['familyName'].isin(people['familyName'])))
+                ~((possible_relatives['givenName'].isin(people['givenName'])) &
+                  (possible_relatives['familyName'].isin(people['familyName'])))
             ]
 
         if len(possible_relatives.index) == 0:
@@ -404,7 +405,7 @@ class SeleniumCollector(AbstractCollector):
     """
     Collector Class for DataBrokers that use Javascript, or don't use JSON.
     IF the Site uses Javascript to load data after the page has loaded then the 'request' module will not work to pull
-        the data off the site. This class will use a webbrowser (Firefox or Chrome). The browser choice is selected in
+        the data off the site. This class will use a browser (Firefox or Chrome). The browser choice is selected in
         the header data of this module.
     """
 
@@ -423,5 +424,3 @@ class SeleniumCollector(AbstractCollector):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         super(SeleniumCollector, self).__exit__(exc_type, exc_val, exc_tb)
-
-
