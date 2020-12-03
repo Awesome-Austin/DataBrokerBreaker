@@ -9,6 +9,7 @@ import pandas as pd
 
 from definitions import STATES, TEST_PERSON, SCROLL_PAUSE_TIME
 from collectors import SeleniumCollector
+from collectors.errors import NoRecords
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 # logging.disable(logging.CRITICAL)
@@ -213,6 +214,22 @@ class MyLife(SeleniumCollector):
         :param url: url for which a deeper set of data is to be gathered.
         :return:
         """
+        def _nested_persons(persons):
+            _persons = list()
+            for person_ in _persons:
+                person_ = [r.text.split(', ') for r in person_.find_all(class_='default-text')]
+                person = {'name': person_[0][0].title()}
+                if len(person_[0]) == 2:
+                    person['age'] = person_[0][1]
+
+                if len(person_[1]) > 0:
+                    person['addressLocality'] = person_[1][0].title()
+                    if len(person_[1]) == 2:
+                        person['addressRegion'] = person_[1][1].upper()
+
+                _persons.append(person)
+            return _persons
+
         with self.driver(self.DRIVER_DIR) as driver:
             driver.get(url)
             driver.fullscreen_window()
@@ -261,14 +278,6 @@ class MyLife(SeleniumCollector):
 
         profile_data['address'] = address
 
-        # phones = soup.find(class_='master-profile-card-wrapper-phone').find_all(class_='card-content')
-        # phones = [phone.text for phone in phones]
-        # profile_data['phone'] = phones
-
-        # emails = soup.find(class_='master-profile-card-wrapper-email').find_all(class_='card-content')
-        # emails = [email.text for email in emails]
-        # profile_data['email'] = emails
-
         personal_details = soup.find(class_='card-personal-details')
         if personal_details is not None:
             personal_details = personal_details.find_all(class_='item-container')
@@ -282,7 +291,6 @@ class MyLife(SeleniumCollector):
 
             for key_, value_ in personal_details.items():
                 profile_data[key_] = value_
-
 
         # Education
         schools_ = soup.find(class_='card-education')
@@ -301,7 +309,6 @@ class MyLife(SeleniumCollector):
                 school['name'] = school.pop('school')
                 school['streetAddress'], school['addressLocality'] = school.pop('city').split(', ')
                 schools.append(school)
-
 
         # Work
         employers = soup.find(class_='card-job')
@@ -350,42 +357,8 @@ class MyLife(SeleniumCollector):
             if len(owns) > 0:
                 profile_data['owns'] = owns
 
-        related_to = list()
-        relatives = soup.find_all(class_='relative-container')
-        for relative in relatives:
-            relative_ = [r.text.split(', ') for r in relative.find_all(class_='default-text')]
-            relative = {'name': relative_[0][0].title()}
-
-            if len(relative_[0]) == 2:
-                relative['age'] = relative_[0][1]
-
-            if len(relative_[1]) > 0:
-                relative['addressLocality'] = relative_[1][0].title()
-                if len(relative_[1]) == 2:
-                    relative['addressRegion'] = relative_[1][1].upper()
-
-            related_to.append(relative)
-
-        if len(related_to) > 0:
-            profile_data['relatedTo'] = related_to
-
-        neighbors = list()
-        neighbors_ = soup.find_all(class_='neighbor-container')
-        for neighbor_ in neighbors_:
-            neighbor_ = [r.text.split(', ') for r in neighbor_.find_all(class_='default-text')]
-            neighbor = {'name': neighbor_[0][0].title()}
-            if len(neighbor_[0]) == 2:
-                neighbor['age'] = neighbor_[0][1]
-
-            if len(neighbor_[1]) > 0:
-                neighbor['addressLocality'] = neighbor_[1][0].title()
-                if len(neighbor_[1]) == 2:
-                    neighbor['addressRegion'] = neighbor_[1][1].upper()
-
-            neighbors.append(neighbor)
-
-        if len(neighbors) > 0:
-            profile_data['neighbors'] = neighbors
+        profile_data['relatedTo'] = _nested_persons(soup.find_all(class_='relative-container'))
+        profile_data['neighbors'] = _nested_persons(soup.find_all(class_='neighbor-container'))
 
         return profile_data
 
