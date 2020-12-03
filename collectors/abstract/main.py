@@ -113,13 +113,9 @@ class AbstractCollector:
             return False
 
         possible_relatives = self.data_from_website.get('relatedTo', list())
-        possible_relatives = pd.DataFrame([n for d in possible_relatives for n in d])
+        possible_relatives = pd.DataFrame([n for d in possible_relatives.fillna(list()) for n in d])
         if len(possible_relatives) == 0:
             return False
-
-        # Filter out relatives that are already in the people DataFrame
-        # if self.person.get("non_relatives", None) is None:
-        #     self.person["non_relatives"] = list()
 
         if len(self.person.get("non_relatives", '')) == 0:
             self.person["non_relatives"] = list()
