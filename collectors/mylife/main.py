@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup as bs
 from selenium.common.exceptions import StaleElementReferenceException
 import pandas as pd
 
-from definitions import STATES, TEST_PERSON, SCROLL_PAUSE_TIME
+from definitions import STATES, SCROLL_PAUSE_TIME
 from collectors import SeleniumCollector
 from collectors.errors import NoRecords
 
@@ -25,8 +25,8 @@ class ChromeCrash(StaleElementReferenceException):
 
 class MyLife(SeleniumCollector):
     """
-        A Class to represent an Spokeo Search Collector.
-        Spokeo follows the content recommendations from http://schema.org, so minimal modifications to the data
+        A Class to represent an MyLife Search Collector.
+        MyLife follows the content recommendations from http://schema.org, so minimal modifications to the data
             structure will be required.
     """
 
@@ -58,7 +58,11 @@ class MyLife(SeleniumCollector):
 
     def get_data(self):
         """
+        Takes self.url (for a general MyLife search), scrapes the site data, and adds
+            it to the self.data_from_website DataFrame.
 
+        MyLife keeps its full data set on the page for the specific record, so self._gather_deep_data() can be used
+            to pull that deeper data.
         :return: Boolean
         """
         def _clean_search_hit(search_hit):
@@ -77,7 +81,6 @@ class MyLife(SeleniumCollector):
             current_city = search_hit.find(class_='hit-location').get_text().upper()
 
             # Find all Addresses for search result.
-
             try:
                 address = search_hit.find(class_='hit-pastAddresses').find_all(class_='hit-values')
                 address = list({a.text.upper().replace('.', '') for a in address})
@@ -371,14 +374,14 @@ class MyLife(SeleniumCollector):
         profile_data['relatedTo'] = _nested_persons(soup.find_all(class_='relative-container'))
         profile_data['neighbors'] = _nested_persons(soup.find_all(class_='neighbor-container'))
 
+        # Photos
+        profile_data['pictures'] = list({photo['src'] for photo in soup.find_all(class_='profile-picture-holder')})
         return profile_data
 
     def _gather_deep_data(self):
         """
-        Gathers the data that is deeper within the website.
-        Automatically run after validating data.
-
-        :return:
+        Gathers the data that is deeper within the website by calling self._deep_data(url) for each record found
+            during the general search in self.get_data()
         """
 
         cleaned_data_from_website = list()
@@ -397,17 +400,7 @@ class MyLife(SeleniumCollector):
             return
 
         self._gather_deep_data()
-        for i, record in self.data_from_website.iterrows():
-            for pic in record.get('pics', list()):
-                self.download_file(pic, f'{record.id}_{i}')
-
-
-if __name__ == '__main__':
-    # with MyLife(TEST_PERSON, test=True) as ml:
-    #     ml.validate_data()
-    #     if ml.matching_relatives():
-    #         relatives = ml.relatives()
-
-    ml = MyLife(TEST_PERSON, test=True)
-    dd = ml._deep_data('https://www.mylife.com/john-smith/e781501602096')
-    print()
+        for record_id, record in self.data_from_website.iterrows():
+            for i, picture in enumerate(record.get('pictures', list())):
+                if not 'profile-placeholder' in picture:
+                    self.download_file(picture, f'{i}_{record_id}')

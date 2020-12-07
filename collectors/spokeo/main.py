@@ -43,10 +43,6 @@ class Spokeo(RequestCollector):
             ])).replace(' ', '-')
 
     def __enter__(self):
-        """
-        Enters the class and runs self.get_data()
-        :return: self
-        """
         try:
             super(Spokeo, self).__enter__()
             self.get_data()
@@ -58,7 +54,11 @@ class Spokeo(RequestCollector):
         super(Spokeo, self).__exit__(exc_type, exc_val, exc_tb)
 
     def get_data(self):
-        """ Search Spokeo for the given person. Spokeo splits the data into 2 parts, one hidden and one visible."""
+        """
+            Takes self.url (for a general Spokeo search), scrapes the site data, and adds
+                it to the self.data_from_website DataFrame
+            :return: Boolean
+        """
         def _visible_search_results():
             """
             For each record found collect all that data held in the visible search results.
@@ -109,6 +109,7 @@ class Spokeo(RequestCollector):
 
             search_results = pd.DataFrame(search_results)
             name_fields = search_results.pop('main_name')
+            # noinspection PyTypeChecker
             name_fields = json_normalize(name_fields)
             search_results['givenName'] = name_fields['first_name']
             search_results['middleName'] = name_fields['middle_name']
@@ -162,6 +163,7 @@ class Spokeo(RequestCollector):
 
             return search_results
 
+        # Search Spokeo for the given person. Spokeo splits the data into 2 parts, one hidden and one visible.
         visible_search_results = _visible_search_results()
         hidden_search_results = _hidden_search_results()
 
@@ -170,12 +172,5 @@ class Spokeo(RequestCollector):
 
         self.data_from_website = all_search_results
 
-
-if __name__ == '__main__':
-    # from definitions import TEST_PERSON
-    # with Spokeo(TEST_PERSON, test=True) as s:
-    #     s.validate_data()
-    #     if s.check_relatives():
-    #         relatives = s.relatives
-    #         pass
-    help(Spokeo)
+    def validate_data(self):
+        super(Spokeo, self).validate_data()
