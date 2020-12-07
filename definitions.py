@@ -1,12 +1,19 @@
 import os
 import pandas as pd
+import json
 
-ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT_DIR = os.path.dirname(f'{os.path.abspath(__file__)}')
 TEST_DIR = os.path.join(ROOT_DIR, 'tests')
 FILES_DIR = os.path.join(ROOT_DIR, 'files')
 OUTPUT_DIR = os.path.join(FILES_DIR, 'output')
 NAMES_DIR = os.path.join(FILES_DIR, 'names.csv')
+
 DRIVERS_DIR = os.path.join(ROOT_DIR, 'drivers', )
+SETTINGS_DIR = os.path.join(ROOT_DIR, 'settings', )
+
+with open(os.path.join(SETTINGS_DIR, 'settings/config.json')) as f:
+    CONFIG = json.load(f)
+
 
 PEOPLE = pd.read_csv(NAMES_DIR, index_col=0).fillna('')
 
@@ -29,10 +36,5 @@ STATES = {'AL': 'ALABAMA', 'AK': 'ALASKA', 'AZ': 'ARIZONA', 'AR': 'ARKANSAS', 'C
           'UT': 'UTAH', 'VT': 'VERMONT', 'VA': 'VIRGINIA', 'WA': 'WASHINGTON', 'WV': 'WEST VIRGINIA', 'WI': 'WISCONSIN',
           'WY': 'WYOMING', 'GU': 'GUAM', 'PR': 'PUERTO RICO', 'VI': 'VIRGIN ISLANDS'}
 
-TEST_PERSON = pd.Series(
-    {'givenName': 'John',
-     'familyName': 'Smith',
-     'addressLocality': 'Los Angeles',
-     'addressRegion': 'Ca',
-     'checkRelatives': False}
-)
+if __name__ == '__main__':
+    pass

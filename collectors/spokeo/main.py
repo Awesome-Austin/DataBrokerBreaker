@@ -174,3 +174,10 @@ class Spokeo(RequestCollector):
 
     def validate_data(self):
         super(Spokeo, self).validate_data()
+
+
+if __name__ == '__main__':
+    from tests import TEST_PERSON
+    with Spokeo(TEST_PERSON) as spo:
+        pass
+
