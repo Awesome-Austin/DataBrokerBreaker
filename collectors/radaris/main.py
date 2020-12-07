@@ -6,8 +6,6 @@ from bs4 import BeautifulSoup as bs
 import pandas as pd
 
 from collectors import RequestCollector
-from definitions import TEST_PERSON
-
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s -  %(levelname)s -  %(message)s')
 # logging.disable(logging.CRITICAL)
@@ -126,3 +124,9 @@ class Radaris(RequestCollector):
 
     def validate_data(self):
         super(Radaris, self).validate_data()
+
+
+if __name__ == '__main__':
+    from tests import TEST_PERSON
+    with Radaris(TEST_PERSON) as rad:
+        pass

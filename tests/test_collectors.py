@@ -1,5 +1,5 @@
 from collectors import COLLECTORS, MyLife
-from definitions import TEST_PERSON
+from tests import TEST_PERSON
 
 
 def test_all():
@@ -10,8 +10,8 @@ def test_all():
                 relatives = c.relatives
                 print(relatives)
 
-def test_mylife():
 
+def test_mylife():
     with MyLife(TEST_PERSON, test=True) as c:
         c.validate_data()
         if c.check_relatives():

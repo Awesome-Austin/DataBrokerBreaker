@@ -404,3 +404,9 @@ class MyLife(SeleniumCollector):
             for i, picture in enumerate(record.get('pictures', list())):
                 if not 'profile-placeholder' in picture:
                     self.download_file(picture, f'{i}_{record_id}')
+
+
+if __name__ == '__main__':
+    from tests import TEST_PERSON
+    with MyLife(TEST_PERSON) as ml:
+        pass
