@@ -11,7 +11,7 @@ from selenium.webdriver import Chrome as Driver
 from requests.exceptions import HTTPError
 from bs4 import BeautifulSoup as bs
 
-from collectors.errors import SiteSchemaChange, NoRecords
+from collectors.errors import SiteSchemaChange, NoRecords, NoSuchMethod
 
 from definitions import OUTPUT_DIR, STATES, CHROME_DRIVER_DIR as DRIVER_DIR
 
@@ -45,12 +45,11 @@ class AbstractCollector:
         for k, v in kwargs.items():
             self.__setattr__(k, v)
 
-        self.save_dir = path.join(OUTPUT_DIR, '{test}{givenName}_{familyName}'.format(
-            givenName=self.person.givenName,
-            familyName=self.person.familyName,
+        self.save_dir = path.join(OUTPUT_DIR, '{test}{family_name}_{given_name}'.format(
+            given_name=self.person.givenName,
+            family_name=self.person.familyName,
             test='__test__' if self.test else ''
         ))
-        self.save_dir = path.join(self.save_dir,  datetime.now().strftime("%Y-%m-%d"))
 
     def __enter__(self):
         print(f'-- {self.site} --')
@@ -101,19 +100,18 @@ class AbstractCollector:
     def check_relatives(self, people=None):
         """
         Cleans the 'relatedTo' field.
-        Asks user if the relative should be added to the list of relatives.
-        Checks if relative is already int 'people' DataFrame.
-        Adds relative to DataFrame of relatives.
+            * Asks user if the relative should be added to the list of relatives.
+            * Checks if relative is already int 'people' DataFrame.
+            * Adds relative to DataFrame of relatives.
 
         :param  people : DataFrame of all the people being collected.
-        :return Boolean: Next step is back where this method was called where it should have code that adds the
-                         self.relatives object to the People DataFrame.
+        :return: Boolean
         """
         if not self.person.get('checkRelatives', False):
             return False
 
         possible_relatives = self.data_from_website.get('relatedTo', list())
-        possible_relatives = pd.DataFrame([n for d in possible_relatives.fillna(list()) for n in d])
+        possible_relatives = pd.DataFrame([n for d in possible_relatives for n in d])
         if len(possible_relatives) == 0:
             return False
 
@@ -123,8 +121,11 @@ class AbstractCollector:
         else:
             if type(self.person["non_relatives"]) == str:
                 self.person["non_relatives"] = json.loads(self.person["non_relatives"].replace("'", '"'))
+
             non_relatives = pd.DataFrame(self.person["non_relatives"])
-            possible_relatives = possible_relatives[~(possible_relatives.name.isin(non_relatives.name))]
+            if len(non_relatives) > 0:
+                possible_relatives = possible_relatives[~(possible_relatives.name.isin(non_relatives.name))]
+
             if len(possible_relatives) == 0:
                 return False
 
@@ -148,7 +149,7 @@ class AbstractCollector:
         for i, possible_relative in enumerate(possible_relatives.iterrows()):
             row_index, possible_relative = possible_relative
             # try:
-            msg = '{:{orc}d}) Would you like to add {givenName}{middleName} {familyName}? [y/n] '.format(
+            msg = '{:{orc}d}) Would you like to add {givenName}{middleName} {familyName}? [y|n] '.format(
                 i + 1,
                 orc=len(str(starting_count)),
                 givenName=possible_relative.get('givenName', ''),
@@ -176,17 +177,13 @@ class AbstractCollector:
 
     def save_csv(self):
         """
-        Checks if self.save_dir exists, creates it if it doesn't exist.
-        Saves a csv file in directory save_dir.
-
-        :return Boolean:
+        Saves a csv file in directory save_dir. Checks if self.save_dir exists, creates it if it doesn't exist.
         """
         if not path.exists(self.save_dir):
             makedirs(self.save_dir)
-        file_name = f'{self.site}.csv'
+        file_name = f'{self.site}_{datetime.now().strftime("%Y-%m-%d")}.csv'
 
         self.data_from_website.to_csv(path.join(self.save_dir, file_name))
-        return True
 
     def download_file(self, url, output_file_name):
         """
@@ -224,18 +221,26 @@ class AbstractCollector:
 
     def _site_record_matches_person(self, site_record):
         """
-        Check if the website record is reasonably close to the searched person.
+        Check if the website record is **reasonably** close to the searched person.
             * Check if the site Region (State) is the same as the person's Region.
             * Check if the Locality (City) is the same as the person's Locality.
-            * Check if the record is in the same city and has the same first name and last name as the search.
-                * Sometimes the data brokers will have the middle name listed as the first name or the last name, so
-                  we need to control for that as well.
+            * Check if the record has the same first name and last name as the search.
+                * Sometimes the data brokers will have the middle name listed as the first or the last name
 
         :param site_record: Pandas.Series representing the site record
-        :return Integer: Will be MISMATCH_NAME (0), MISMATCH_LOCALITY (1), or MATCH_PERSON (2)
+        :return: Integer. Will be MISMATCH_NAME (0), MISMATCH_LOCALITY (1), MATCH_AKA = 2, or MATCH_PERSON (3)
         """
 
         def _name_perms(_first: str = '', _middle: str = '', _last: str = ''):
+            """
+            Generate a list of possible name variants that the DataBrokers may have
+            :param _first:
+            :param _middle:
+            :param _last:
+            :return: list() of str()
+            """
+
+            #  All plain combos of first and last name
             _names = [
                 f'{_first} {_last}',
                 f'{_last} {_first}',
@@ -247,14 +252,17 @@ class AbstractCollector:
                 f'{_first} {_middle}{_last}',
             ]
 
+            # All combos with a truncated first name
             for i in range(len(_first)):
                 _names.append(f'{_first[:i]} {_last}')
                 _names.append(f'{_last} {_first[:i]}')
 
+            # All combos with a truncated last name
             for i in range(len(_last)):
                 _names.append(f'{_first} {_last[:i]}')
                 _names.append(f'{_last[:i]} {_first}')
 
+            # All combos with a truncated middle name
             for i in range(len(_middle)):
                 _names.append(f'{_first} {_middle[:i]}')
                 _names.append(f'{_middle[:i]} {_first}')
@@ -264,10 +272,12 @@ class AbstractCollector:
 
         # Get the most recent address on the site
         site_address = site_record.get('address', dict())
+
+        # if the DataBroker returns a list of addresses, grab the first address on the list
         if type(site_address) is list:
             site_address = site_address[0]
 
-        # Start with the Region (state)
+        # Check the Region (state)
         site_region = site_address.get('addressRegion', '').lower()
         person_region = self.person.get('addressRegion', '').lower()
         same_region = any([
@@ -276,43 +286,44 @@ class AbstractCollector:
             STATES.get(site_region.upper(), '').lower() == person_region,
             ])
 
-        # Continue with the Locality (city)
+        # Check the Locality (city)
         site_locality = site_address.get('addressLocality', '').lower()
         person_locality = self.person.get('addressLocality', '').lower()
         same_locality = site_locality == person_locality
 
         same_region_and_locality = all([same_locality, same_region])
 
+        # Get the name permutations for the search person's name.
         person_aka = _name_perms(
             _first=self.person['givenName'].lower(),
             _middle=self.person['middleName'].lower(),
             _last=self.person['familyName'].lower()
         )
 
-        site_name = site_record['name'].lower()
-        _site_name = site_name.split(' ')
+        # Get the name permutations for the site record's name.
+        site_record_name = site_record['name'].lower()
+        _site_record_name = site_record_name.split(' ')
         site_aka = _name_perms(
-            _first=_site_name[0],
-            _middle=''.join(_site_name[1:-1]),
-            _last=_site_name[-1]
+            _first=_site_record_name[0],
+            _middle=''.join(_site_record_name[1:-1]),
+            _last=_site_record_name[-1]
         )
 
-        matches_aka = [aka in person_aka for aka in site_aka]
-
-        if site_name not in person_aka:
-            if not any(matches_aka):
-                logging.debug(f'MISMATCH_NAME: {site_name}')
+        # Check if the Site Record name is in the generate list of the Search Person's A.K.A.s
+        if site_record_name not in person_aka:
+            matches_aka = [aka in person_aka for aka in site_aka]
+            if not any(matches_aka):  # If none of the possible name variants match
+                logging.debug(f'MISMATCH_NAME: {site_record_name}')
                 return MISMATCH_NAME
             else:
-                logging.debug(f'MATCH_AKA: {site_name}')
+                logging.debug(f'MATCH_AKA: {site_record_name}')
                 return MATCH_AKA
 
         if not same_region_and_locality:
-            logging.debug(f'MISMATCH_LOCALITY: {site_name}')
+            logging.debug(f'MISMATCH_LOCALITY: {site_record_name}')
             return MISMATCH_LOCALITY
 
-        # if not any(matches_aka):
-        logging.debug(f'MATCH_PERSON: {site_name}')
+        logging.debug(f'MATCH_PERSON: {site_record_name}')
         return MATCH_PERSON
 
     def validate_data(self):
@@ -321,7 +332,7 @@ class AbstractCollector:
         If the record doesn't reasonably match it will ask the user if the record should be included in the data
             output.
 
-        :return Boolean:
+        :return: Boolean
         """
         original_count = len(self.data_from_website.index)
         print(f'\t** Validate Records ({original_count}) **')
@@ -366,9 +377,14 @@ class AbstractCollector:
                 if site_record_check == MISMATCH_NAME:
                     self.data_from_website.drop(index=site_id, inplace=True)
 
-        print('\t** {count} record{s} found **\n'.format(count=len(self.data_from_website.index),
-                                                         s='s' if len(self.data_from_website.index) != 1 else ''))
+        print('\t** {count} record{s} found **\n'.format(
+            count=len(self.data_from_website.index),
+            s='s' if len(self.data_from_website.index) != 1 else ''))
         return True
+
+    def get_data(self):
+        """This method needs to be superseded by the Specific Collector Subclass."""
+        raise NoSuchMethod(f"self.get_data has not been created for {self.site} Collector")
 
 
 class RequestCollector(AbstractCollector):
@@ -388,7 +404,7 @@ class RequestCollector(AbstractCollector):
         """
         Use the request module to get the site code and then runs it through BeautifySoup html parser.
 
-        :return BeautifySoup:
+        :return: BeautifySoup
         """
         with requests.get(self.url, headers={'User-Agent': 'Mozilla/5.0'}) as request:
             try:
