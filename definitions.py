@@ -11,10 +11,6 @@ NAMES_DIR = os.path.join(FILES_DIR, 'names.csv')
 DRIVERS_DIR = os.path.join(ROOT_DIR, 'drivers', )
 SETTINGS_DIR = os.path.join(ROOT_DIR, 'settings', )
 
-with open(os.path.join(SETTINGS_DIR, 'settings/config.json')) as f:
-    CONFIG = json.load(f)
-
-
 PEOPLE = pd.read_csv(NAMES_DIR, index_col=0).fillna('')
 
 CHROME_DRIVER_DIR = os.path.join(DRIVERS_DIR, 'chromedriver.exe')

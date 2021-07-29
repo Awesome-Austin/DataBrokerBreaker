@@ -80,7 +80,7 @@ If possible use a masked email; The emails are often delayed, so a temp email (e
 Email them at `privacy@mylife.com` using the following template:
         
         Hello,
-        I am a vitim of stalking. I demand my Personal Identifiable information opted-out from your site and service, and all those you own.
+        I am a victim of stalking. I demand my Personal Identifiable information opted-out from your site and service, and all those you own.
         My information is as follows:
             * full_name
             * date_of_birth
