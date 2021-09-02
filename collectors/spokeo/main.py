@@ -79,7 +79,7 @@ class Spokeo(RequestCollector):
             search_results = pd.DataFrame(search_results)
 
             # Create a field for Spokeo's internal record ID, needed to request record removal.
-            search_results['id'] = search_results['url'].str.split('/').str[-1].str[1:]
+            search_results['@id'] = search_results['url'].str.split('/').str[-1].str[1:]
 
             search_results.drop(
                 inplace=True,
@@ -108,6 +108,7 @@ class Spokeo(RequestCollector):
                 return
 
             search_results = pd.DataFrame(search_results)
+            search_results.rename(inplace=True, columns={'id': '@id'})
             name_fields = search_results.pop('main_name')
             # noinspection PyTypeChecker
             name_fields = json_normalize(name_fields)
@@ -167,8 +168,8 @@ class Spokeo(RequestCollector):
         visible_search_results = _visible_search_results()
         hidden_search_results = _hidden_search_results()
 
-        all_search_results = pd.merge(visible_search_results, hidden_search_results, on='id', how='outer')
-        all_search_results.set_index('id', inplace=True)
+        all_search_results = pd.merge(visible_search_results, hidden_search_results, on='@id', how='outer')
+        all_search_results.set_index('@id', inplace=True)
 
         self.data_from_website = all_search_results
 

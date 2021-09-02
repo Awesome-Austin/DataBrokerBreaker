@@ -110,8 +110,10 @@ class AbstractCollector:
         if not self.person.get('checkRelatives', False):
             return False
 
-        possible_relatives = self.data_from_website.get('relatedTo', list())
-        possible_relatives = pd.DataFrame([n for d in possible_relatives for n in d])
+        possible_relatives = self.data_from_website.get('relatedTo', pd.Series())
+        possible_relatives = [_ for _ in possible_relatives if type(_) is list]
+        possible_relatives = [n for d in possible_relatives for n in d]
+        possible_relatives = pd.DataFrame(possible_relatives)
         if len(possible_relatives) == 0:
             return False
 

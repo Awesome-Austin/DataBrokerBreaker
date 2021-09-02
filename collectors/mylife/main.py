@@ -120,7 +120,7 @@ class MyLife(SeleniumCollector):
                 pass
 
             return {
-                'id': hit_id,
+                '@id': hit_id,
                 '@type': 'Person',
                 'name': ' '.join(name),
                 'givenName': name[0],
@@ -214,7 +214,7 @@ class MyLife(SeleniumCollector):
             search_results[i] = _clean_search_hit(search_result)
 
         self.data_from_website = pd.DataFrame(search_results)
-        self.data_from_website.set_index('id', inplace=True)
+        self.data_from_website.set_index('@id', inplace=True)
         return True
 
     def _deep_data(self, url):
@@ -253,11 +253,14 @@ class MyLife(SeleniumCollector):
             self._raise_site_schema_change()
         profile_data = profile_data.string
         profile_data = json.loads(profile_data, strict=False)
-        profile_data['id'] = profile_data.pop('@id').split('/')[-1]
+        profile_data['@id'] = profile_data.pop('@id').split('/')[-1]
 
-        about = profile_data.pop('about')
-        for k, v in about.items():
-            profile_data[k] = v
+        try:
+            about = profile_data.pop('about')
+            for k, v in about.items():
+                profile_data[k] = v
+        except KeyError:
+            pass
 
         name_ = profile_data.pop('name')
         profile_data['name'] = name_
@@ -292,6 +295,7 @@ class MyLife(SeleniumCollector):
         if personal_details is not None:
             personal_details = personal_details.find_all(class_='item-container')
             personal_details = [detail.text.split(': ') for detail in personal_details]
+            personal_details = [_ for _ in personal_details if len(_) == 2]
             personal_details = {detail.lower().replace(' ', '_'): value for
                                 detail, value in personal_details if value != 'Add Info'}
 
@@ -391,8 +395,8 @@ class MyLife(SeleniumCollector):
 
         cleaned_data_from_website = pd.DataFrame(cleaned_data_from_website)
         if len(cleaned_data_from_website) == 0:
-            cleaned_data_from_website['id'] = '0'
-        cleaned_data_from_website.set_index('id', inplace=True)
+            cleaned_data_from_website['@id'] = '0'
+        cleaned_data_from_website.set_index('@id', inplace=True)
         self.data_from_website = cleaned_data_from_website
 
     def validate_data(self):
