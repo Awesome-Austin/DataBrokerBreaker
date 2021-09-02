@@ -1,17 +1,19 @@
 import os
 import pandas as pd
 import json
+import shutil
 
 ROOT_DIR = os.path.dirname(f'{os.path.abspath(__file__)}')
 TEST_DIR = os.path.join(ROOT_DIR, 'tests')
 FILES_DIR = os.path.join(ROOT_DIR, 'files')
 OUTPUT_DIR = os.path.join(FILES_DIR, 'output')
 NAMES_DIR = os.path.join(FILES_DIR, 'names.csv')
+EMAIL_DIR = os.path.join(FILES_DIR, 'email.txt')
+TEMPLATES_DIR = os.path.join(ROOT_DIR, 'templates')
 
 DRIVERS_DIR = os.path.join(ROOT_DIR, 'drivers', )
 SETTINGS_DIR = os.path.join(ROOT_DIR, 'settings', )
 
-PEOPLE = pd.read_csv(NAMES_DIR, index_col=0).fillna('')
 
 CHROME_DRIVER_DIR = os.path.join(DRIVERS_DIR, 'chromedriver.exe')
 # FIREFOX_DRIVER_DIR = os.path.join(DRIVERS_DIR, '')
