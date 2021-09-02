@@ -1,5 +1,6 @@
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlsplit
 import logging
+import json
 
 import requests
 from bs4 import BeautifulSoup as bs
@@ -49,64 +50,17 @@ class Radaris(RequestCollector):
         """
         def _clean_search_hit(search_hit):
             """
-            Takes in a search search_hit hit as a BeautifySoup tag and pulls out all the data to match the desired schema.
+            Takes in a search_hit as a dictionary and pulls out all the data to match the desired schema.
 
             :param search_hit:
             :return Dictionary: A dictionary with the cleaned data
             """
-            id = search_hit.find(itemprop="url").get('href').split('/')[-1]
+            search_hit['url'] = search_hit.pop('@id')
+            search_hit['@id'] = search_hit['url'].split('/')[-1]
+            search_hit['middleName'] = search_hit.pop('additionalName', '')
 
-            given_name = search_hit.find(itemprop='givenName')
-            given_name = given_name.text.strip() if given_name is not None else ''
 
-            middle_name = search_hit.find(itemprop='additionalName')
-            middle_name = middle_name.text.strip() if middle_name is not None else ''
-
-            family_name = search_hit.find(itemprop='familyName')
-            family_name = family_name.text.strip() if family_name is not None else ''
-
-            name_ = search_hit.find(itemprop='name')
-            name_ = name_.text.strip() if name_ is not None else ''
-
-            age = search_hit.find(class_='age')
-            age = age.text.replace('age:', '').strip() if age is not None else ''
-
-            address = {'@type': 'PostalAddress'}
-
-            try:
-                address['addressLocality'] = search_hit.find(itemprop='AddressLocality').text.strip()
-            except AttributeError as e:
-                logging.debug(e)
-
-            try:
-                address['addressRegion'] = search_hit.find(itemprop='AddressRegion').text.strip()
-            except AttributeError as e:
-                logging.debug(e)
-
-            aka = search_hit.find(class_='ka')
-            aka = aka.text.split(":")[1].strip().split(', ') if aka is not None else ''
-
-            related_to = search_hit.find_all(itemprop='relatedTo')
-            related_to = [r.find(itemprop='name') for r in related_to if r.find(itemprop='name') is not None]
-            related_to = [{'name': r.text.split(',')[0]} for r in related_to]
-
-            url = search_hit.find(itemprop="url").get('href')
-            url = urljoin(self.base_url, url)
-
-            return {
-                '@context': 'http://schema.org',
-                '@type': 'Person',
-                'id': id,
-                'givenName': given_name,
-                'middleName': middle_name,
-                'familyName': family_name,
-                'name': name_,
-                'age': age,
-                'address': address,
-                'additionalName': aka,
-                'relatedTo': related_to,
-                'url': url
-            }
+            return search_hit
 
         logging.debug(self.url)
         res = requests.get(self.url)
@@ -114,12 +68,14 @@ class Radaris(RequestCollector):
         soup = bs(res.content, 'html.parser')
 
         search_results = soup.find_all(
-            lambda tag: tag.name == 'div' and tag.get('itemtype') == 'http://schema.org/Person'
-        )
+            lambda tag: tag.name == 'script' and tag.get('type') == 'application/ld+json'
+        )[0].contents[0]
+
+        search_results = json.loads(search_results)
 
         search_results = [_clean_search_hit(result) for result in search_results]
         self.data_from_website = pd.DataFrame(search_results)
-        self.data_from_website.set_index('id', inplace=True)
+        self.data_from_website.set_index('@id', inplace=True)
         return True
 
     def validate_data(self):
