@@ -34,13 +34,19 @@ class AbstractCollector:
         :param base_url: str for the base url for the Data Broker being scraped. ex: www.spokeo.com; www.whitepages.com
         """
         self.site = type(self).__name__
-        self.person = person
+        self.person = person.copy(deep=True)
         self.base_url = base_url
         self.url = None
         self.soup = None
         self.data_from_website = pd.DataFrame()
         self.relatives = pd.DataFrame()
         self.test = kwargs.get('test', False)
+
+        ignore_people = self.person.get('ignore', '{}')
+        if type(ignore_people) is str:
+            ignore_people = json.loads(ignore_people.replace("'", '"'))
+
+        self.ignore_people = ignore_people
 
         for k, v in kwargs.items():
             self.__setattr__(k, v)
@@ -117,19 +123,12 @@ class AbstractCollector:
         if len(possible_relatives) == 0:
             return False
 
-        if len(self.person.get("non_relatives", '')) == 0:
-            self.person["non_relatives"] = list()
+        non_relatives = self.ignore_people.get('relatives', list())
+        if len(non_relatives) > 0:
+            possible_relatives = possible_relatives[~(possible_relatives.name.isin(pd.DataFrame(non_relatives).name))]
 
-        else:
-            if type(self.person["non_relatives"]) == str:
-                self.person["non_relatives"] = json.loads(self.person["non_relatives"].replace("'", '"'))
-
-            non_relatives = pd.DataFrame(self.person["non_relatives"])
-            if len(non_relatives) > 0:
-                possible_relatives = possible_relatives[~(possible_relatives.name.isin(non_relatives.name))]
-
-            if len(possible_relatives) == 0:
-                return False
+        if len(possible_relatives) == 0:
+            return False
 
         split_name = possible_relatives['name'].str.title().str.split()
         possible_relatives['givenName'] = split_name.str[0]
@@ -148,17 +147,21 @@ class AbstractCollector:
         starting_count = len(possible_relatives)
 
         print(f'\t** Check Relatives ({starting_count}) **')
+        orc = len(str(starting_count))
         for i, possible_relative in enumerate(possible_relatives.iterrows()):
             row_index, possible_relative = possible_relative
-            # try:
-            msg = '{:{orc}d}) Would you like to add {givenName}{middleName} {familyName}? [y|n] '.format(
-                i + 1,
-                orc=len(str(starting_count)),
-                givenName=possible_relative.get('givenName', ''),
-                middleName=f" {' '.join(possible_relative.get('middleName', ''))}" if (
-                        len(possible_relative.get('middleName', '')) > 0) else '',
-                familyName=possible_relative.get('familyName', '')
-            )
+
+            given_name = possible_relative.get('givenName', '').strip()
+
+            middle_name = possible_relative.get('middleName', '')
+            if type(middle_name) is list:
+                middle_name = ' '.join(middle_name)
+            if len(middle_name) > 0:
+                middle_name = ' ' + middle_name.strip()
+
+            family_name = possible_relative.get('familyName', '').strip()
+
+            msg = f'{i + 1:{orc}d}) Would you like to add {given_name}{middle_name} {family_name}? [y|n] '
 
             try:
                 add_relative = input(f'\t{msg}?\t').lower()[0] == 'y'
@@ -168,14 +171,23 @@ class AbstractCollector:
             if add_relative:
                 self._add_relative(possible_relative)
             else:
-                self.person['non_relatives'].append({'name': possible_relative['name']})
+                non_relatives.append({'name': possible_relative['name']})
+                # self.person['nonRelatives'].append({'name': possible_relative['name']})
+
+        if len(non_relatives) > 0:
+            try:
+                self.ignore_people['relatives'] += non_relatives
+            except KeyError:
+                self.ignore_people['relatives'] = non_relatives
+
+            self.person['ignore'] = self.ignore_people
 
         print('\t** {count} relative{s} found **\n'.format(
             count=len(self.relatives),
             s='s' if len(self.relatives) != 1 else '')
         )
 
-        return True
+        return self.relatives
 
     def save_csv(self):
         """
@@ -336,12 +348,24 @@ class AbstractCollector:
 
         :return: Boolean
         """
+
         original_count = len(self.data_from_website.index)
         print(f'\t** Validate Records ({original_count}) **')
         if original_count == 0:
-            return False
+            return self.person
 
-        for i, site_record in enumerate(self.data_from_website.iterrows()):
+        possible_matches = self.data_from_website.copy(deep=True)
+
+        non_matches = self.ignore_people.get('searchResults', dict())
+        if len(non_matches) > 0:
+            possible_matches = possible_matches[~(
+                possible_matches.index.isin(pd.DataFrame(index=non_matches.get(self.site.lower(), list())).index)
+            )]
+
+        if len(possible_matches) == 0:
+            return self.person
+
+        for i, site_record in enumerate(possible_matches.iterrows()):
             site_id, site_record = site_record
 
             additional_names = site_record.get('additionalName', [])
@@ -367,22 +391,38 @@ class AbstractCollector:
                 aka=f' (aka {additional_names})' if len(additional_names) > 0 else ''
             )
 
+            # Get the list of matches confirmed by previous user run to not be a true match
             if site_record_check == MISMATCH_LOCALITY or site_record_check == MATCH_AKA:
                 try:
-                    if input(f'\t{msg}\t').lower()[0] != 'y':
-                        self.data_from_website.drop(index=site_id, inplace=True)
+                    remove_site_id = input(f'\t{msg}\t').lower()[0] != 'y'
                 except IndexError:
-                    self.data_from_website.drop(index=site_id, inplace=True)
-
+                    remove_site_id = True
             else:
                 print(f'\t{msg}')
-                if site_record_check == MISMATCH_NAME:
-                    self.data_from_website.drop(index=site_id, inplace=True)
+                remove_site_id = (site_record_check == MISMATCH_NAME)
+
+            if remove_site_id:
+                try:
+                    non_matches[self.site.lower()].append(site_id)
+                    # self.person['nonMatch'][self.site.lower()].append(site_id)
+                except KeyError:
+                    non_matches[self.site.lower()] = [site_id]
+                    # self.person['nonMatch'][self.site.lower()] = [site_id]
+
+                self.data_from_website.drop(index=site_id, inplace=True)
+
+        if len(non_matches) > 0:
+            try:
+                self.ignore_people['searchResults'].update(non_matches)
+            except KeyError:
+                self.ignore_people['searchResults'] = non_matches
+
+            self.person['ignore'] = self.ignore_people
 
         print('\t** {count} record{s} found **\n'.format(
             count=len(self.data_from_website.index),
             s='s' if len(self.data_from_website.index) != 1 else ''))
-        return True
+        return self.person
 
     def get_data(self):
         """This method needs to be superseded by the Specific Collector Subclass."""

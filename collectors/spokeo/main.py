@@ -135,15 +135,18 @@ class Spokeo(RequestCollector):
                 geos['@type'] = 'GeoCoordinates'
                 geos = geos.to_dict('records')
 
+                top_city_match = site_record['top_city_states_best_match_index']
+                if top_city_match is None:
+                    top_city_match = 0
                 # Move the most recent city to the top of the list
-                geos.insert(0, geos.pop(site_record['top_city_states_best_match_index']))
+                geos.insert(0, geos.pop(top_city_match))
                 search_results.at[record_id, 'geo'] = geos
 
                 address['@type'] = 'PostalAddress'
                 address = address.to_dict('records')
 
                 # Move the most recent city to the top of the list
-                address.insert(0, address.pop(site_record['top_city_states_best_match_index']))
+                address.insert(0, address.pop(top_city_match))
                 search_results.at[record_id, 'address'] = address
 
                 # Update 'relatedTo' to match schema.org
@@ -174,7 +177,7 @@ class Spokeo(RequestCollector):
         self.data_from_website = all_search_results
 
     def validate_data(self):
-        super(Spokeo, self).validate_data()
+        return super(Spokeo, self).validate_data()
 
 
 if __name__ == '__main__':
