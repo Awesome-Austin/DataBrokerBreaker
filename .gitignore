@@ -5,6 +5,6 @@
 # *.[oa]
 # *~
 \.idea
-\files
+\files\*
 \__pycache__
 \drivers
