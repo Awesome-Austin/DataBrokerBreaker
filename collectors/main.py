@@ -6,17 +6,20 @@ from definitions import PEOPLE, NAMES_DIR
 
 
 def collect_people_data(people: pd.DataFrame):
-    for person in people.iterrows():
-        person_id, person = person
-        people = collect_person_data(person, people, person_id)
-        # break
+    people = people.copy(deep=True).reset_index(drop=True)
+    i = 0
+    while True:
+        person, people = collect_person_data(people.iloc[i], people)
+        i += 1
+        if i == len(people.index):
+            break
 
     people.to_csv(NAMES_DIR)
 
     return people
 
 
-def collect_person_data(person: pd.Series, people: pd.DataFrame = None, person_id=None):
+def collect_person_data(person: pd.Series, people: pd.DataFrame = None):
     if people is None:
         people = pd.DataFrame({}, columns=[
             'givenName',
@@ -33,14 +36,17 @@ def collect_person_data(person: pd.Series, people: pd.DataFrame = None, person_i
     for collector in COLLECTORS:
         with collector(person) as c:
             c.validate_data()
-            c.check_relatives(people)
-            relatives = c.relatives
-            if person_id is not None:
-                people.at[person_id] = c.person
+            person = c.person.copy(deep=True)
+            relatives = c.check_relatives(people)
+            if relatives is False:
+                continue
+            people = people.append(relatives, ignore_index=True)
 
-        people = people.append(relatives, ignore_index=True, sort=False)
-        # break
-    return people
+    if person.get('name', '') in people.index:
+        people = people.drop(person.name).append(person, ignore_index=False).sort_index()
+        # people.loc[person.name] = person
+
+    return person, people
 
 
 def run_check(**kwargs):

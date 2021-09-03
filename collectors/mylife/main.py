@@ -400,14 +400,16 @@ class MyLife(SeleniumCollector):
         self.data_from_website = cleaned_data_from_website
 
     def validate_data(self):
-        if not super(MyLife, self).validate_data():
-            return
+        self.person = super(MyLife, self).validate_data()
+        if len(self.data_from_website) > 0:
+            self._gather_deep_data()
 
-        self._gather_deep_data()
         for record_id, record in self.data_from_website.iterrows():
             for i, picture in enumerate(record.get('pictures', list())):
                 if not 'profile-placeholder' in picture:
                     self.download_file(picture, f'{i}_{record_id}')
+
+        return self.person
 
 
 if __name__ == '__main__':
