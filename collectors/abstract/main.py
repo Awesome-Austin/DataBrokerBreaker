@@ -51,6 +51,11 @@ class AbstractCollector:
         for k, v in kwargs.items():
             self.__setattr__(k, v)
 
+        for v in [v for v in ['givenName', 'middleName', 'familyName'] if v not in self.person.keys()]:
+            self.person[v] = ''
+
+
+
         self.save_dir = path.join(OUTPUT_DIR, '{test}{family_name}_{given_name}'.format(
             given_name=self.person.givenName,
             family_name=self.person.familyName,

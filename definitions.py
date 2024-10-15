@@ -14,15 +14,20 @@ TEMPLATES_DIR = os.path.join(ROOT_DIR, 'templates')
 DRIVERS_DIR = os.path.join(ROOT_DIR, 'drivers', )
 SETTINGS_DIR = os.path.join(ROOT_DIR, 'settings', )
 
-PEOPLE = pd.read_csv(NAMES_DIR, index_col=0).fillna('')
+try:
+    PEOPLE = pd.read_csv(NAMES_DIR, index_col=0).fillna('')
+except FileNotFoundError:
+    PEOPLE = pd.DataFrame()
 
 CHROME_DRIVER_DIR = os.path.join(DRIVERS_DIR, 'chromedriver.exe')
 # FIREFOX_DRIVER_DIR = os.path.join(DRIVERS_DIR, '')
 
 SCROLL_PAUSE_TIME = 1.5
-
-with open(os.path.join(FILES_DIR, 'email.txt')) as f:
-    EMAIL = f.readlines()[0].strip()
+try:
+    with open(os.path.join(FILES_DIR, 'email.txt')) as f:
+        EMAIL = f.readlines()[0].strip()
+except FileNotFoundError:
+    EMAIL = ''
 
 STATES = {'AL': 'ALABAMA', 'AK': 'ALASKA', 'AZ': 'ARIZONA', 'AR': 'ARKANSAS', 'CA': 'CALIFORNIA', 'CO': 'COLORADO',
           'CT': 'CONNECTICUT', 'DE': 'DELAWARE', 'FL': 'FLORIDA', 'GA': 'GEORGIA', 'HI': 'HAWAII', 'ID': 'IDAHO',
